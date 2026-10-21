@@ -10,7 +10,7 @@ const app = await buildApp({ config, pool });
 
 jobs.on('error', (error) => app.log.error({ err: error }, 'job queue error'));
 await jobs.start();
-await app.listen({ port: config.port, host: '0.0.0.0' });
+await app.listen({ port: config.port, host: config.host });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, async () => {

@@ -1,7 +1,7 @@
 import { healthResponseSchema, type HealthResponse } from '@gatio/shared';
 
 // Le web ne décide de rien : il lit l'API côté serveur (instructions générales, règle 2).
-const apiUrl = process.env.API_URL ?? 'http://localhost:4000';
+const apiUrl = process.env.API_URL ?? 'http://127.0.0.1:4000';
 
 export async function fetchHealth(): Promise<HealthResponse | null> {
   try {

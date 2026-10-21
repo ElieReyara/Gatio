@@ -9,12 +9,14 @@ const nodeEnvSchema = z.enum(['development', 'test', 'production']).default('dev
 // Valeurs locales par défaut, refusées en production : une variable manquante
 // doit y arrêter le démarrage plutôt que pointer vers une base de développement.
 const localDefaults = {
+  API_HOST: '127.0.0.1',
   API_PORT: '4000',
   DATABASE_URL: 'postgres://gatio:gatio@localhost:5432/gatio',
   LOG_LEVEL: 'info',
 };
 
 const envSchema = z.object({
+  API_HOST: z.string().min(1),
   API_PORT: z.coerce.number().int().positive(),
   DATABASE_URL: z.string().url(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']),
@@ -22,6 +24,7 @@ const envSchema = z.object({
 
 export type Config = {
   nodeEnv: z.infer<typeof nodeEnvSchema>;
+  host: string;
   port: number;
   databaseUrl: string;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
@@ -39,6 +42,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
   return {
     nodeEnv,
+    host: parsed.data.API_HOST,
     port: parsed.data.API_PORT,
     databaseUrl: parsed.data.DATABASE_URL,
     logLevel: parsed.data.LOG_LEVEL,

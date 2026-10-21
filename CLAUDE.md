@@ -273,6 +273,20 @@ Commandes (vérifiées le 21/10/2026, tranche 0) :
 | Documentation OpenAPI | http://localhost:4000/api/v1/openapi.json |
 | Emails de test | http://localhost:8025 |
 
+Bon à savoir (test à froid du 21/10/2026) :
+- **Cloner dans un chemin court** (par exemple `C:\dev\gatio`) : au-delà de 260
+  caractères, Windows casse Vitest (`ERR_PACKAGE_IMPORT_NOT_DEFINED
+  "#module-evaluator"`, registre ERR-002).
+- L'avertissement `Ignored build scripts: esbuild…` de `pnpm install` est sans
+  effet : ne pas lancer `pnpm approve-builds`.
+- Arrêter `pnpm dev` : Ctrl+C dans son terminal, puis `docker compose stop`.
+- Au quotidien, préférer `pnpm dev:api` ou `pnpm dev:web` (mémoire) ; `pnpm dev`
+  sert à vérifier le tout.
+- `pnpm verify` demande les services lancés (`pnpm services`) pour les tests
+  d'intégration ; durée environ 1 min 30 sur un clone propre.
+- Port déjà pris : API par `API_PORT` dans `.env` ; base et Mailpit dans
+  `docker-compose.yml`. En développement l'API n'écoute que sur `127.0.0.1`.
+
 Outils retenus (accord PC-0a du 21/10/2026) : Vitest, ESLint + typescript-eslint
 + règles Next.js, Prettier. Versions : `docs_ia/dependances.md`.
 

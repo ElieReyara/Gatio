@@ -1,0 +1,8 @@
+docs_business/
+docs_ia/
+CLAUDE.md
+pnpm-lock.yaml
+**/dist/
+**/.next/
+**/drizzle/meta/
+next-env.d.ts

@@ -1,0 +1,33 @@
+{
+  "name": "gatio",
+  "private": true,
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "postinstall": "pnpm build:shared",
+    "build:shared": "pnpm --filter @gatio/shared build",
+    "services": "docker compose up -d --wait",
+    "dev": "pnpm services && pnpm build:shared && pnpm db:migrate && pnpm --parallel --filter ./apps/* dev",
+    "dev:api": "pnpm services && pnpm build:shared && pnpm db:migrate && pnpm --filter @gatio/api dev",
+    "dev:web": "pnpm build:shared && pnpm --filter @gatio/web dev",
+    "db:migrate": "pnpm --filter @gatio/api db:migrate",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm build:shared && pnpm -r typecheck",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "pnpm build:shared && pnpm -r test",
+    "test:integration": "pnpm build:shared && pnpm --filter @gatio/api test:integration",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:integration && pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "eslint": "10.12.0",
+    "@next/eslint-plugin-next": "16.4.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3"
+  }
+}

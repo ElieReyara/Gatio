@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: gatio
+          POSTGRES_PASSWORD: gatio
+          POSTGRES_DB: gatio
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gatio -d gatio"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      NODE_ENV: test
+      NEXT_TELEMETRY_DISABLED: 1
+      DATABASE_URL: postgres://gatio:gatio@localhost:5432/gatio
+      TEST_DATABASE_URL: postgres://gatio:gatio@localhost:5432/gatio_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Migrations (application sur base vide et cohérence)
+        run: pnpm db:migrate && pnpm --filter @gatio/api db:check
+      - run: pnpm verify

@@ -1,0 +1,100 @@
+/* Jetons du système de design Savane (systeme-de-design/tokens.json). */
+:root {
+  --bg: #faf6ef;
+  --surface: #ffffff;
+  --ink: #1f1a14;
+  --muted: #5c5248;
+  --brand: #a8431a;
+  --brand-hover: #8a3414;
+  --on-brand: #ffffff;
+  --line: #e4dacb;
+  --control-border: #8c7f70;
+  --sand: #e8d9bf;
+  --success: #15803d;
+  --success-tint: #e3f3e8;
+  --warning: #f59e0b;
+  --warning-tint: #fdf0cf;
+  --danger: #b91c1c;
+  --danger-tint: #fbe4e4;
+  --focus: #1f1a14;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4) var(--space-8);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.title {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.banner {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+.banner--success {
+  background: var(--success-tint);
+}
+
+.banner--error {
+  background: var(--danger-tint);
+}

@@ -6,8 +6,29 @@ Les versions sont fixées à l'installation (tranche 0) et notées ici.
 ## Installées
 | Paquet | Version | Rôle | Usage | Fichiers | Accord (qui, date) |
 |---|---|---|---|---|---|
+| pnpm (corepack) | 10.34.6 | Gestionnaire du monorepo | Installation, scripts | `package.json` (`packageManager`), `pnpm-workspace.yaml` | Responsable, 21/10/2026 (PC-0a) — pnpm 12 non lancé par corepack 0.34 |
+| typescript | 6.0.3 | Langage | Partout | `tsconfig*.json` | Idem — 7.x refusé par typescript-eslint |
+| @types/node | 22.20.5 | Types Node | API, scripts | racine | Idem |
+| eslint | 10.12.0 | Lint | `pnpm lint` | `eslint.config.mjs` | Idem |
+| typescript-eslint | 8.71.1 | Règles TypeScript | `pnpm lint` | `eslint.config.mjs` | Idem |
+| @next/eslint-plugin-next | 16.4.0 | Règles Next.js | `pnpm lint` | `eslint.config.mjs` | Idem — à la place de `eslint-config-next` (même famille, importable directement) |
+| prettier | 3.9.9 | Mise en forme | `pnpm lint`, `pnpm format` | `.prettierrc.json`, `.prettierignore` | Idem |
+| vitest | 5.0.3 | Tests unitaires et d'intégration | `pnpm test`, `pnpm test:integration` | `apps/api/vitest*.config.ts` | Idem |
+| zod | 4.6.5 | Schémas partagés, configuration | Validation | `packages/shared/src`, `apps/api/src/config.ts` | Idem |
+| fastify | 5.12.5 | API | Serveur HTTP | `apps/api/src/app.ts` | Idem |
+| fastify-type-provider-zod | 7.0.0 | Validation Zod dans Fastify, OpenAPI | Routes | `apps/api/src/app.ts` | Idem |
+| @fastify/swagger | 9.9.1 | OpenAPI généré | `/api/v1/openapi.json` | `apps/api/src/app.ts` | Idem |
+| drizzle-orm | 0.45.3 | Accès base | Requêtes, migrations en test | `apps/api/src/db`, `test/integration` | Idem |
+| drizzle-kit | 0.31.11 | Migrations versionnées | `db:migrate`, `db:generate`, `db:check` | `apps/api/drizzle.config.ts`, `apps/api/drizzle/` | Idem |
+| pg + @types/pg | 8.23.1 | Pilote PostgreSQL | Drizzle, pg-boss, tests | `apps/api/src/db/client.ts` | Idem |
+| pg-boss | 12.37.0 | Tâches de fond | Démarré avec l'API (aucune tâche encore) ; crée son propre schéma `pgboss` hors des migrations Drizzle (modèle de données : « on ne les modélise pas ») | `apps/api/src/jobs/boss.ts` | Idem |
+| tsx | 4.23.15 | Exécution TypeScript en développement | `pnpm dev:api`, drizzle-kit | `apps/api/package.json` | Idem |
+| next | 16.4.0 | Interface web | Rendu serveur | `apps/web` | Idem |
+| react, react-dom (+ @types) | 19.3.0 | Interface web | Composants | `apps/web/src` | Idem |
+| Image `postgres:17-alpine` | 17 | Base locale et CI | `docker-compose.yml`, CI | | Idem |
+| Image `axllent/mailpit` | v1.31.4 | Boîte email de test | `docker-compose.yml` | | Idem |
 
-Aucune au 19/10/2026.
+Télémétrie de Next.js coupée par le `postinstall` de la racine (`next telemetry disable`) et en CI (`NEXT_TELEMETRY_DISABLED=1`).
 
 ## Prévues par la conception (accord à demander en PC-0a ou à la tranche indiquée)
 | Paquet ou outil | Rôle | Source | Tranche |

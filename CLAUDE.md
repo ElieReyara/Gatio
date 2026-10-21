@@ -32,8 +32,10 @@ qu'elles sont ouvertes, appliquer la valeur proposée si elle est indiquée.
 
 ## 2. Stack réelle
 Sources : instructions générales, cahier de conception §2, §3 et §7.
-Versions exactes : à fixer en tranche 0 (dernière version stable de chaque
-outil), puis inscrites ici et dans `docs_ia/dependances.md`.
+Versions fixées en tranche 0 (détail dans `docs_ia/dependances.md`) : Node 22,
+pnpm 10.34.6, TypeScript 6.0.3, Next.js 16.4.0 + React 19.3.0, Fastify 5.12.5,
+Zod 4.6.5, Drizzle ORM 0.45.3, pg-boss 12.37.0, PostgreSQL 17, Vitest 5.0.3.
+Règle pour une nouvelle version : publiée depuis au moins 2 semaines.
 
 | Couche | Technologie et version |
 |---|---|
@@ -232,9 +234,11 @@ docs_ia/
 | Écart maquette / conception | Journal de session + dossier de contrôle |
 
 ## 9. Commandes utiles
-Prérequis du poste : Node.js 22, corepack (fournit pnpm), Docker Desktop
-**démarré**. État constaté le 19/10/2026 : pnpm absent (à activer par
-`corepack enable`), Docker démarré.
+Prérequis du poste : Node.js 22.12 ou plus, corepack (fournit pnpm 10.34.6,
+fixé dans `package.json` ; pnpm 12 n'est pas lancé par corepack 0.34), Docker
+Desktop **démarré**. Ports utilisés : web 3000, API 4000, PostgreSQL 5432,
+Mailpit 8025 (interface) et 1025 (SMTP). Copier `.env.example` en `.env` est
+facultatif en développement (valeurs locales par défaut), obligatoire en production.
 
 **Poste à mémoire limitée** (8 Go de RAM, environ 1 Go libre, Docker limité à
 environ 4 Go) :
@@ -249,24 +253,28 @@ environ 4 Go) :
 - Arrêter les conteneurs inutiles d'autres projets avant une session longue.
 - Sous-agents : un seul à la fois.
 
-Commandes cibles, créées en tranche 0 (aucune n'existe encore) :
+Commandes (vérifiées le 21/10/2026, tranche 0) :
 | But | Commande |
 |---|---|
 | Activer pnpm | `corepack enable` |
-| Installer | `pnpm install` |
-| Services locaux (PostgreSQL, Mailpit, faux prestataire) | `docker compose up -d` |
-| Migrations | `pnpm db:migrate` |
-| Lancer en développement | `pnpm dev` (web + API) · `pnpm dev:api` · `pnpm dev:web` |
+| Installer (compile aussi `packages/shared`) | `pnpm install` |
+| **Tout lancer en une commande** (services Docker, migrations, API, web) | `pnpm dev` → http://localhost:3000 |
+| Lancer l'API seule / le web seul | `pnpm dev:api` · `pnpm dev:web` |
+| Services locaux seuls (PostgreSQL, Mailpit) | `pnpm services` |
 | Arrêter les services locaux | `docker compose stop` |
+| Migrations | `pnpm db:migrate` · nouvelle migration : `pnpm --filter @gatio/api db:generate` · cohérence : `pnpm --filter @gatio/api db:check` |
 | Build | `pnpm build` |
 | Types | `pnpm typecheck` |
-| Lint | `pnpm lint` |
-| Tests unitaires | `pnpm test` |
-| Tests d'intégration (vraie base) | `pnpm test:integration` |
-| Parcours complets | `pnpm test:e2e` (à partir de la tranche 5) |
-| Vérification complète | `pnpm verify` (typecheck + lint + test + test:integration + build) |
+| Lint et formatage | `pnpm lint` (ESLint + Prettier) · corriger : `pnpm format` |
+| Tests unitaires | `pnpm test` (Vitest) |
+| Tests d'intégration (vraie base `gatio_test`, créée et migrée automatiquement) | `pnpm test:integration` |
+| Parcours complets | à créer en tranche 5 (Playwright, accord à demander) |
+| **Vérification complète** | `pnpm verify` (typecheck + lint + test + test:integration + build) |
+| Documentation OpenAPI | http://localhost:4000/api/v1/openapi.json |
+| Emails de test | http://localhost:8025 |
 
-Outils de test et de lint : à proposer en tranche 0 (accord requis, rubrique 4).
+Outils retenus (accord PC-0a du 21/10/2026) : Vitest, ESLint + typescript-eslint
++ règles Next.js, Prettier. Versions : `docs_ia/dependances.md`.
 
 ## 10. Exceptions tracées
 Si une modification hors périmètre est autorisée : l'indiquer dans le journal

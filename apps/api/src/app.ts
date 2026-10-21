@@ -10,7 +10,7 @@ import {
 import type pg from 'pg';
 import type { Config } from './config.js';
 import { AppError } from './lib/errors.js';
-import { maskPersonalData } from './lib/redact.js';
+import { maskPersonalData, serializeError } from './lib/redact.js';
 import { healthRoutes } from './modules/health/routes.js';
 
 export type AppDependencies = {
@@ -24,6 +24,7 @@ export async function buildApp({ config, pool }: AppDependencies) {
       level: config.logLevel,
       serializers: {
         req: (request) => ({ method: request.method, url: maskPersonalData(request.url) }),
+        err: serializeError,
       },
     },
     bodyLimit: 1024 * 1024,
@@ -47,14 +48,15 @@ export async function buildApp({ config, pool }: AppDependencies) {
         .send(errorBody('VALIDATION_ERROR', 'Données invalides.', { issues: error.validation }));
     }
     if (error.statusCode && error.statusCode < 500) {
-      return reply.code(error.statusCode).send(errorBody('VALIDATION_ERROR', error.message));
+      const code = codeForStatus(error.statusCode);
+      return reply.code(error.statusCode).send(errorBody(code, defaultMessages[code]));
     }
     request.log.error({ err: error }, 'unhandled error');
     return reply.code(500).send(errorBody('INTERNAL_ERROR', 'Erreur interne.'));
   });
 
   app.setNotFoundHandler((_request, reply) => {
-    reply.code(404).send(errorBody('NOT_FOUND', 'Ressource introuvable.'));
+    reply.code(404).send(errorBody('NOT_FOUND', defaultMessages.NOT_FOUND));
   });
 
   await app.register(
@@ -67,6 +69,27 @@ export async function buildApp({ config, pool }: AppDependencies) {
 
   return app;
 }
+
+// Erreurs levées par Fastify ou ses extensions (corps trop gros, type de contenu…) :
+// le statut décide du code du contrat (§6.1).
+function codeForStatus(status: number): ClientErrorCode {
+  if (status === 401) return 'UNAUTHENTICATED';
+  if (status === 403) return 'FORBIDDEN';
+  if (status === 404) return 'NOT_FOUND';
+  if (status === 429) return 'RATE_LIMITED';
+  return 'VALIDATION_ERROR';
+}
+
+type ClientErrorCode =
+  'UNAUTHENTICATED' | 'FORBIDDEN' | 'NOT_FOUND' | 'RATE_LIMITED' | 'VALIDATION_ERROR';
+
+const defaultMessages: Record<ClientErrorCode, string> = {
+  UNAUTHENTICATED: 'Authentification requise.',
+  FORBIDDEN: 'Accès refusé.',
+  NOT_FOUND: 'Ressource introuvable.',
+  RATE_LIMITED: 'Trop de requêtes. Réessayez plus tard.',
+  VALIDATION_ERROR: 'Requête invalide.',
+};
 
 function errorBody(
   code: ErrorResponse['error']['code'],

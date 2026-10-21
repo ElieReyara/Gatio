@@ -5,6 +5,9 @@ on:
     branches: [dev, main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -23,7 +26,6 @@ jobs:
           --health-timeout 3s
           --health-retries 30
     env:
-      NODE_ENV: test
       NEXT_TELEMETRY_DISABLED: 1
       DATABASE_URL: postgres://gatio:gatio@localhost:5432/gatio
       TEST_DATABASE_URL: postgres://gatio:gatio@localhost:5432/gatio_test
@@ -36,4 +38,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Migrations (application sur base vide et cohérence)
         run: pnpm db:migrate && pnpm --filter @gatio/api db:check
+      - name: Aucune migration oubliée par rapport au schéma
+        run: |
+          pnpm --filter @gatio/api db:generate
+          test -z "$(git status --porcelain apps/api/drizzle)"
       - run: pnpm verify

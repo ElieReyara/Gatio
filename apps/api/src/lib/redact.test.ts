@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maskPersonalData, maskPhone } from './redact.js';
+import { maskPersonalData, maskPhone, serializeError } from './redact.js';
 
 describe('masquage des données personnelles dans les journaux', () => {
   it('masque un numéro de téléphone', () => {
@@ -13,9 +13,23 @@ describe('masquage des données personnelles dans les journaux', () => {
     expect(masked).toContain('+235••••56');
   });
 
-  it('ne touche pas une référence de commande ni un identifiant court', () => {
-    expect(maskPersonalData('/support/orders?reference=GT-7K3M9Q')).toBe(
-      '/support/orders?reference=GT-7K3M9Q',
-    );
+  it('masque un numéro saisi avec des espaces', () => {
+    expect(maskPersonalData('numéro 66 12 34 56')).not.toContain('34 56');
+  });
+
+  it('laisse intacts une référence, un UUID et une date', () => {
+    const text =
+      '/api/v1/orders/123e4567-e89b-12d3-a716-446655440000?reference=GT-7K3M9Q&from=2026-10-21';
+    expect(maskPersonalData(text)).toBe(text);
+  });
+
+  it("ne recopie pas le détail d'une erreur PostgreSQL et masque le message", () => {
+    const error = Object.assign(new Error('échec pour nom@exemple.com'), {
+      code: '23505',
+      detail: 'Key (email)=(nom@exemple.com) already exists.',
+    });
+    const serialized = JSON.stringify(serializeError(error));
+    expect(serialized).not.toContain('nom@exemple.com');
+    expect(serialized).toContain('23505');
   });
 });

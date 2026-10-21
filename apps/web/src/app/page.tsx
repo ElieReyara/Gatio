@@ -1,3 +1,4 @@
+import { Icon } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
 import { fetchHealth } from '@/lib/api';
 import { texts } from '@/texts/fr';
@@ -16,7 +17,7 @@ export default async function HomePage() {
         className={`banner ${ok ? 'banner--success' : 'banner--error'}`}
         role={ok ? 'status' : 'alert'}
       >
-        <span aria-hidden="true">{ok ? '✔' : '✖'}</span>
+        <Icon name={ok ? 'check' : 'cross'} />
         <span>{ok ? texts.health.ok : texts.health.unavailable}</span>
       </p>
     </main>

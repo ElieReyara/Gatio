@@ -14,6 +14,9 @@ const apiUrl = process.env.API_URL ?? 'http://127.0.0.1:4000';
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Serveur de développement seulement : il refuse sinon ses fichiers aux adresses
+  // inconnues, et la page ne démarre pas sur un téléphone passé par le tunnel d'essai.
+  allowedDevOrigins: ['*.trycloudflare.com'],
   async rewrites() {
     return [{ source: '/api/v1/:path*', destination: `${apiUrl}/api/v1/:path*` }];
   },

@@ -277,7 +277,8 @@ async function downloadManifest(): Promise<ScanManifest | null> {
       signal: AbortSignal.timeout(MANIFEST_TIMEOUT_MS),
     });
     const fresh = scanManifestSchema.parse(await response.json());
-    await saveManifest(fresh);
+    // Stockage local indisponible : la liste reste utilisable tant que la page est ouverte.
+    await saveManifest(fresh).catch(() => undefined);
     return fresh;
   } catch {
     // Réseau lent ou coupé : la liste déjà enregistrée reste en service.

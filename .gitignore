@@ -10,3 +10,5 @@ coverage/
 Thumbs.db
 next-env.d.ts
 *.tsbuildinfo
+# Réglage de télémétrie écrit par Next.js en CI ou sous Docker
+apps/web/cache/

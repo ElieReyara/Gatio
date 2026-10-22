@@ -5,7 +5,7 @@ Une ligne par fonctionnalité du plan unifié. États : non commencée · partie
 
 | Tranche | Fonctionnalité | Écrans | État | Vérifiée par | Remarques |
 |---|---|---|---|---|---|
-| 0 | Squelette de bout en bout | — | terminée sauf CI hébergée | `pnpm verify` (15 + 2 tests), test à froid, revue isolée | CI GitHub jamais exécutée : envoi vers GitHub bloqué par le réseau du poste |
+| 0 | Squelette de bout en bout | — | terminée | `pnpm verify` (15 + 2 tests), test à froid, revue isolée, CI GitHub verte (run 39756846801) | |
 | 1 | QR signé et scan hors ligne (prototype) | C2 | non commencée | | |
 | 2 | Compte organisateur, mot de passe oublié | O1, E3 | non commencée | | |
 | 3 | Événement, catégories, période de vente, aperçu des frais | O2, O3, O4 | non commencée | | |

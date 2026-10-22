@@ -24,4 +24,4 @@ Tout écart est signalé au journal et au dossier de contrôle avant d'être con
 
 | Date | Route | Écart | Raison | Validé par |
 |---|---|---|---|---|
-| 21/10/2026 | toutes | Code `INTERNAL_ERROR` ajouté (absent de la liste §6.1, qui ne donne que les « codes principaux ») | Une erreur 500 doit avoir un code du format commun | À valider (journal de bord n° 61) |
+| 21/10/2026 | toutes | Code `INTERNAL_ERROR` ajouté (absent de la liste §6.1, qui ne donne que les « codes principaux ») | Une erreur 500 doit avoir un code du format commun | Responsable, 22/10/2026 (journal de bord n° 61) |

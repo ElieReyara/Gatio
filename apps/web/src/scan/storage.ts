@@ -36,10 +36,13 @@ async function run<T>(
 ): Promise<T> {
   const db = await openDatabase();
   try {
+    // Réussite seulement quand la transaction est validée (un quota plein l'annule après coup).
     return await new Promise<T>((resolve, reject) => {
-      const request = action(db.transaction(store, mode).objectStore(store));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      const transaction = db.transaction(store, mode);
+      const request = action(transaction.objectStore(store));
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onabort = () => reject(transaction.error ?? request.error);
+      transaction.onerror = () => reject(transaction.error ?? request.error);
     });
   } finally {
     db.close();

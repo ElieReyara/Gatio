@@ -18,6 +18,8 @@ export const texts = {
     listLoading: 'Téléchargement de la liste…',
     listMissing:
       'La liste des billets n’est pas encore sur ce téléphone. Connectez-vous à Internet puis rechargez la page.',
+    scannerLoadError:
+      'Le lecteur de QR code n’a pas pu être chargé. Connectez-vous à Internet puis rechargez la page.',
     cameraError:
       'La caméra n’est pas accessible. Autorisez-la dans les réglages du navigateur, puis rechargez la page.',
     aim: 'Visez le QR code du billet',

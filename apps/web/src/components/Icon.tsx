@@ -4,6 +4,12 @@ const shapes = {
   check: <path d="M5 12l5 5 9-10" />,
   cross: <path d="M6 6l12 12M18 6L6 18" />,
   alert: <path d="M12 5v9M12 19v.5" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8v.5" />
+    </>
+  ),
   ticket: <path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z" />,
   clock: (
     <>

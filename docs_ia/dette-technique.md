@@ -1,0 +1,12 @@
+# Dette technique — Gatio
+
+Ce qui est connu et volontairement reporté, avec l'échéance. Une ligne retirée = traitée (le noter au journal).
+
+| N° | Date | Origine | Problème | Risque | À traiter | Échéance |
+|---|---|---|---|---|---|---|
+| D1 | 22/10/2026 | Revue tranche 1 (constat 7) | Les routes `/api/v1/dev/scan-prototype/*` et l'obligation de la clé de signature dépendent de `NODE_ENV === 'production'` ; `NODE_ENV` absent vaut `development` | Un déploiement sans `NODE_ENV` exposerait le prototype et signerait avec une clé éphémère | Exiger `NODE_ENV` explicite au démarrage ; retirer le prototype | Tranche 10 (retrait du prototype) et 17 (déploiement) |
+| D2 | 22/10/2026 | Revue tranche 1 (constat 6) | Le site relaie `/api/v1/*` vers l'API : l'API voit toutes les requêtes venir de 127.0.0.1 | Les limites par adresse IP (R10, R31, R36) compteraient tout le monde ensemble | `trustProxy` restreint à l'adresse du site et lecture de `X-Forwarded-For` | Tranche 2 (premières limites) |
+| D3 | 22/10/2026 | Revue tranche 1 (constat 2) | Le cache du service worker n'est jamais purgé des anciens fichiers de Next.js | Il grossit à chaque nouvelle version sur les téléphones des contrôleurs | Purge des fichiers non cités par la page courante ni chargés à la demande | Tranche 10 |
+| D4 | 22/10/2026 | Tranche 1 | Pastille « Vérifié en X ms » hors maquette ; vert de la pastille « Liste prête » (`#4ade80`) et fonds translucides des pastilles repris de la maquette mais absents des jetons | Écart au système de design | Retirer la pastille (mesure envoyée avec les passages) ; faire ajouter ces couleurs aux jetons par le design | Tranche 10 |
+| D5 | 22/10/2026 | Tranche 1 | Relais `/api/v1` fixé au build de Next.js (`API_URL` lu par `next.config.ts`) | Une image construite pour un environnement ne vise pas l'API d'un autre | Décider avec l'hébergement : relais au niveau du serveur web ou variable lue à l'exécution | Tranche 17 |
+| D6 | 22/10/2026 | Tranche 1, mesure | Page `/scan` : 214 Ko compressés de JavaScript et CSS au premier chargement (socle React et Next.js) ; en cache ensuite | Premier chargement lent sur réseau faible (conception : pages légères) | Mesurer avec la page finale, alléger si la cible de la tranche 17 n'est pas tenue | Tranche 17 |

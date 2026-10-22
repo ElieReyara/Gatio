@@ -60,7 +60,8 @@ export function verifyTicket(
 
 function signatureIsValid(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array) {
   try {
-    return ed.verify(signature, message, publicKey);
+    // RFC 8032 stricte : une seule signature acceptée par billet.
+    return ed.verify(signature, message, publicKey, { zip215: false });
   } catch {
     return false;
   }

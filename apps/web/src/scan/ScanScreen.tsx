@@ -1,30 +1,31 @@
 'use client';
 
-import { parseTicketQr, scanManifestSchema } from '@gatio/shared';
+import { parseTicketQr, scanManifestSchema, type ScanManifest } from '@gatio/shared';
 import type QrScanner from 'qr-scanner';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
 import { texts } from '@/texts/fr';
-import { playSignal, unlockAudio, type Signal } from './feedback';
-import { addPassage, listPassages, loadManifest, saveManifest } from './storage';
+import { playSignal, resumeAudio, unlockAudio, type Signal } from './feedback';
+import { addPassage, listPassages, loadManifest, saveManifest, type LocalPassage } from './storage';
 import { prepareManifest, verifyTicket, type PreparedManifest, type ScanOutcome } from './verify';
 
 const t = texts.scan;
 // Liste fictive du prototype (tranche 1) ; remplacée par /api/v1/scan/manifest en tranche 10.
 const MANIFEST_URL = '/api/v1/dev/scan-prototype/manifest';
+const MANIFEST_TIMEOUT_MS = 10_000;
 const RESULT_MS = 1200;
 const SAME_QR_PAUSE_MS = 3000;
 
 type ListState = 'loading' | 'ready' | 'missing';
+type ScannerState = 'idle' | 'loading' | 'running' | 'camera-error' | 'load-error';
 type Shown = { outcome: ScanOutcome; verifyMs: number };
 
 export function ScanScreen() {
   const [listState, setListState] = useState<ListState>('loading');
   const [online, setOnline] = useState(true);
   const [pending, setPending] = useState(0);
-  const [scanning, setScanning] = useState(false);
-  const [cameraError, setCameraError] = useState(false);
+  const [scannerState, setScannerState] = useState<ScannerState>('idle');
   const [shown, setShown] = useState<Shown | null>(null);
   const [lastVerifyMs, setLastVerifyMs] = useState<number | null>(null);
 
@@ -37,26 +38,43 @@ export function ScanScreen() {
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    registerServiceWorker();
-    const update = () => setOnline(navigator.onLine);
-    update();
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    void loadLocalState().then(({ prepared, passages }) => {
-      manifest.current = prepared;
-      firstPassages.current = passages.first;
-      setPending(passages.count);
-      setListState(prepared ? 'ready' : 'missing');
-    });
+    const updateOnline = () => setOnline(navigator.onLine);
+    updateOnline();
+    window.addEventListener('online', updateOnline);
+    window.addEventListener('offline', updateOnline);
+    document.addEventListener('visibilitychange', resumeAudio);
+
+    const applyManifest = (value: ScanManifest | null) => {
+      if (value) manifest.current = prepareManifest(value);
+      setListState(manifest.current ? 'ready' : 'missing');
+    };
+    void (async () => {
+      // La liste déjà enregistrée sert tout de suite ; la nouvelle arrive en arrière-plan.
+      const [stored, passages] = await Promise.all([
+        loadManifest().catch(() => null),
+        listPassages().catch(() => [] as LocalPassage[]),
+      ]);
+      firstPassages.current = firstValidPassages(passages);
+      setPending(passages.length);
+      if (stored) applyManifest(stored);
+      applyManifest(await downloadManifest());
+    })();
+    // Le lecteur de QR est chargé à la demande : on le charge dès maintenant, en ligne,
+    // pour que le service worker le garde avant tout passage en mode avion.
+    void preloadScanner().then(registerServiceWorker);
+
     return () => {
-      window.removeEventListener('online', update);
-      window.removeEventListener('offline', update);
+      window.removeEventListener('online', updateOnline);
+      window.removeEventListener('offline', updateOnline);
+      document.removeEventListener('visibilitychange', resumeAudio);
+      clearTimeout(dismissTimer.current);
       scanner.current?.destroy();
     };
   }, []);
 
   const dismiss = useCallback(() => {
     clearTimeout(dismissTimer.current);
+    resumeAudio();
     showing.current = false;
     setShown(null);
   }, []);
@@ -67,54 +85,60 @@ export function ScanScreen() {
       if (!prepared || showing.current) return;
       if (lastQr.current?.text === text && Date.now() < lastQr.current.until) return;
       showing.current = true;
+      try {
+        const startedAt = performance.now();
+        const outcome = verifyTicket(text, prepared, firstPassages.current);
+        const verifyMs = Math.round(performance.now() - startedAt);
+        const ticketId = parseTicketQr(text)?.ticketId ?? null;
+        const scannedAt = new Date().toISOString();
+        if (outcome.kind === 'valid' && ticketId) firstPassages.current.set(ticketId, scannedAt);
+        const passage = { id: newId(), ticketId, scannedAt, localResult: outcome.kind, verifyMs };
+        // Le compteur ne bouge que si le passage est réellement enregistré.
+        void addPassage(passage).then(() => setPending((count) => count + 1));
 
-      const startedAt = performance.now();
-      const outcome = verifyTicket(text, prepared, firstPassages.current);
-      const verifyMs = Math.round(performance.now() - startedAt);
-      const ticketId = parseTicketQr(text)?.ticketId ?? null;
-      const scannedAt = new Date().toISOString();
-      if (outcome.kind === 'valid' && ticketId) firstPassages.current.set(ticketId, scannedAt);
-      void addPassage({
-        id: crypto.randomUUID(),
-        ticketId,
-        scannedAt,
-        localResult: outcome.kind,
-        verifyMs,
-      });
-
-      lastQr.current = { text, until: Date.now() + RESULT_MS + SAME_QR_PAUSE_MS };
-      setPending((count) => count + 1);
-      setLastVerifyMs(verifyMs);
-      setShown({ outcome, verifyMs });
-      playSignal(display(outcome).signal);
-      dismissTimer.current = setTimeout(dismiss, RESULT_MS);
+        lastQr.current = { text, until: Date.now() + RESULT_MS + SAME_QR_PAUSE_MS };
+        setLastVerifyMs(verifyMs);
+        setShown({ outcome, verifyMs });
+        playSignal(display(outcome).signal);
+        dismissTimer.current = setTimeout(dismiss, RESULT_MS);
+      } catch {
+        // Ne jamais laisser l'écran bloqué sur un QR qui a provoqué une erreur.
+        showing.current = false;
+      }
     },
     [dismiss],
   );
 
   const start = useCallback(() => {
     unlockAudio();
-    setScanning(true);
+    setScannerState('loading');
   }, []);
 
   // La vidéo n'existe qu'après le rendu de l'écran de scan : la caméra démarre ensuite.
   useEffect(() => {
-    if (!scanning || scanner.current) return;
+    if (scannerState !== 'loading' || scanner.current) return;
     void (async () => {
+      let Scanner: typeof QrScanner;
       try {
-        const { default: Scanner } = await import('qr-scanner');
-        if (!video.current) return;
+        Scanner = (await import('qr-scanner')).default;
+      } catch {
+        setScannerState('load-error');
+        return;
+      }
+      if (!video.current) return;
+      try {
         scanner.current = new Scanner(video.current, (result) => onDecode(result.data), {
           returnDetailedScanResult: true,
           preferredCamera: 'environment',
           maxScansPerSecond: 10,
         });
         await scanner.current.start();
+        setScannerState('running');
       } catch {
-        setCameraError(true);
+        setScannerState('camera-error');
       }
     })();
-  }, [scanning, onDecode]);
+  }, [scannerState, onDecode]);
 
   const indicator = (
     <div className="scan-indicator">
@@ -130,7 +154,7 @@ export function ScanScreen() {
     </div>
   );
 
-  if (!scanning) {
+  if (scannerState === 'idle') {
     return (
       <main className="page">
         <Logo />
@@ -151,7 +175,7 @@ export function ScanScreen() {
           {t.start}
         </button>
         <p className="banner banner--info">
-          <Icon name="alert" />
+          <Icon name="info" />
           <span>{t.installTip}</span>
         </p>
       </main>
@@ -159,6 +183,12 @@ export function ScanScreen() {
   }
 
   const result = shown ? display(shown.outcome) : null;
+  const aim =
+    scannerState === 'camera-error'
+      ? t.cameraError
+      : scannerState === 'load-error'
+        ? t.scannerLoadError
+        : t.aim;
   return (
     <main className="scan-camera">
       {/* Vidéo et viseur restent montés : la caméra ne redémarre pas entre deux billets. */}
@@ -178,7 +208,7 @@ export function ScanScreen() {
           <path d="M20 70V30a10 10 0 0 1 10-10h40M190 20h40a10 10 0 0 1 10 10v40M240 190v40a10 10 0 0 1-10 10h-40M70 240H30a10 10 0 0 1-10-10v-40" />
         </svg>
       </div>
-      <p className="scan-aim">{cameraError ? t.cameraError : t.aim}</p>
+      <p className="scan-aim">{aim}</p>
       {result && (
         <button
           type="button"
@@ -239,41 +269,66 @@ function formatTime(iso: string): string {
   return `${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-async function loadLocalState() {
-  let stored = await loadManifest().catch(() => null);
-  if (navigator.onLine) {
-    try {
-      const response = await fetch(MANIFEST_URL, { cache: 'no-store' });
-      const fresh = scanManifestSchema.parse(await response.json());
-      await saveManifest(fresh);
-      stored = fresh;
-    } catch {
-      // Réseau lent ou coupé : on garde la liste déjà enregistrée.
-    }
+async function downloadManifest(): Promise<ScanManifest | null> {
+  if (!navigator.onLine) return null;
+  try {
+    const response = await fetch(MANIFEST_URL, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(MANIFEST_TIMEOUT_MS),
+    });
+    const fresh = scanManifestSchema.parse(await response.json());
+    await saveManifest(fresh);
+    return fresh;
+  } catch {
+    // Réseau lent ou coupé : la liste déjà enregistrée reste en service.
+    return null;
   }
-  const passages = await listPassages().catch(() => []);
+}
+
+function firstValidPassages(passages: LocalPassage[]): Map<string, string> {
   const first = new Map<string, string>();
-  for (const passage of passages.sort((a, b) => a.scannedAt.localeCompare(b.scannedAt))) {
+  for (const passage of [...passages].sort((a, b) => a.scannedAt.localeCompare(b.scannedAt))) {
     if (passage.localResult === 'valid' && passage.ticketId && !first.has(passage.ticketId)) {
       first.set(passage.ticketId, passage.scannedAt);
     }
   }
-  return {
-    prepared: stored ? prepareManifest(stored) : null,
-    passages: { first, count: passages.length },
-  };
+  return first;
+}
+
+// crypto.randomUUID manque sur les iPhone antérieurs à iOS 15.4.
+function newId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+// Charge le lecteur et, sur les navigateurs sans lecture native (iPhone), son worker.
+async function preloadScanner() {
+  try {
+    const { default: Scanner } = await import('qr-scanner');
+    const engine = await Scanner.createQrEngine();
+    if (engine instanceof Worker) engine.terminate();
+  } catch {
+    // Hors ligne au premier chargement : le message d'erreur viendra au toucher « Commencer ».
+  }
 }
 
 // Le service worker garde la page et ses fichiers pour scanner sans réseau ; on lui
 // donne tout ce que la page a déjà chargé, car il n'existait pas au premier chargement.
-function registerServiceWorker() {
+async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
-  void navigator.serviceWorker.register('/sw.js').then(async () => {
+  try {
+    await navigator.serviceWorker.register('/sw.js');
     const registration = await navigator.serviceWorker.ready;
     const urls = performance
       .getEntriesByType('resource')
       .map((entry) => entry.name)
       .filter((url) => url.startsWith(location.origin) && !url.includes('/api/'));
     registration.active?.postMessage({ type: 'cache-urls', urls: [location.pathname, ...urls] });
-  });
+  } catch {
+    // Sans service worker, la page fonctionne en ligne seulement.
+  }
 }

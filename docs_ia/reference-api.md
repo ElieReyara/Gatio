@@ -7,6 +7,9 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | Méthode et route | Accès | Tranche | Schéma (fichier) | Tests | Écart au contrat |
 |---|---|---|---|---|---|
 | GET `/health` | public | 0 | `packages/shared/src/health.ts` (`{ status: ok\|degraded, database: ok\|unavailable }`) ; 503 si la base est injoignable | `apps/api/src/app.test.ts`, `test/integration/health.test.ts` | Contrat : « santé du service » sans format : format choisi ici |
+| GET `/dev/scan-prototype/manifest` | public (développement seulement) | 1 | `scanManifestSchema` (`packages/shared/src/scan.ts`) : liste fictive | `scan-prototype/routes.test.ts` | Temporaire : remplacée par GET `/scan/manifest` (accès scan) en tranche 10 ; absente en production |
+| GET `/dev/scan-prototype/samples` | public (développement seulement) | 1 | 7 billets d'essai signés | idem | Temporaire (outil d'essai) |
+| POST `/dev/scan-prototype/tickets` | public (développement seulement) | 1 | Billet « vendu après le téléchargement » | idem | Temporaire (outil d'essai) |
 | GET `/openapi.json` | public | 0 | Document OpenAPI généré depuis les schémas Zod (routes cachées exclues) | `apps/api/src/app.test.ts` | Ajout : le contrat (§6.1) demande la documentation générée sans fixer son adresse |
 
 ## Codes d'erreur implémentés

@@ -26,6 +26,11 @@ export function unlockAudio() {
   void audio.resume();
 }
 
+// iOS suspend le son après un appel, un verrouillage ou un changement d'application.
+export function resumeAudio() {
+  if (audio && audio.state !== 'running') void audio.resume().catch(() => undefined);
+}
+
 export function playSignal(signal: Signal) {
   const { beeps, vibration } = patterns[signal];
   navigator.vibrate?.(vibration);

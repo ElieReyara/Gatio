@@ -270,6 +270,10 @@ Commandes (vérifiées le 21/10/2026, tranche 0) :
 | Tests d'intégration (vraie base `gatio_test`, créée et migrée automatiquement) | `pnpm test:integration` |
 | Parcours complets | à créer en tranche 5 (Playwright, accord à demander) |
 | **Vérification complète** | `pnpm verify` (typecheck + lint + test + test:integration + build) |
+| Clé de signature des QR (à mettre dans `.env`) | `pnpm --filter @gatio/api keys:generate` |
+| Site en mode production local (essai du scan hors ligne) | `pnpm start:web` (exige un `.env` avec `API_URL`) + `pnpm dev:api` |
+| Tunnel HTTPS pour un téléphone (accord du responsable, le temps de l'essai) | `cloudflared tunnel --url http://127.0.0.1:3000` |
+| Page de scan / billets d'essai (prototype, tranche 1) | http://localhost:3000/scan · http://localhost:3000/dev/billets-essai |
 | Documentation OpenAPI | http://localhost:4000/api/v1/openapi.json |
 | Emails de test | http://localhost:8025 |
 

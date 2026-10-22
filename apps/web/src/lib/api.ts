@@ -9,9 +9,11 @@ export function apiUrl(): string {
 }
 
 export async function fetchHealth(): Promise<HealthResponse | null> {
-  const url = `${apiUrl()}/api/v1/health`;
   try {
-    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const response = await fetch(`${apiUrl()}/api/v1/health`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+    });
     return healthResponseSchema.parse(await response.json());
   } catch {
     return null;

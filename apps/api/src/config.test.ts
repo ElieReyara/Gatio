@@ -21,6 +21,10 @@ describe('configuration', () => {
       DATABASE_URL: 'postgres://u:p@db:5432/gatio',
       LOG_LEVEL: 'info',
       TICKET_SIGNING_KEY_ID: '1',
+      WEB_URL: 'https://gatio.example',
+      ALLOWED_ORIGINS: 'https://gatio.example',
+      MAILPIT_URL: 'http://mailpit:8025',
+      EMAIL_FROM: 'noreply@gatio.example',
     };
     expect(() => loadConfig(production)).toThrow(/TICKET_SIGNING_PRIVATE_KEY/);
     expect(loadConfig({ ...production, TICKET_SIGNING_PRIVATE_KEY: 'k' }).ticketSigning).toEqual({

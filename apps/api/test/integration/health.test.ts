@@ -1,7 +1,7 @@
 import pg from 'pg';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../src/app.js';
-import { createTicketSigner, generateSigningKey } from '../../src/modules/tickets/signing.js';
+import { testDependencies } from '../../src/test-support.js';
 import { testDatabaseUrl } from './database.js';
 
 const pool = new pg.Pool({ connectionString: testDatabaseUrl, max: 2 });
@@ -12,11 +12,7 @@ afterAll(async () => {
 
 describe('base réelle', () => {
   it('la route de santé répond ok', async () => {
-    const app = await buildApp({
-      config: { logLevel: 'silent', nodeEnv: 'test' },
-      pool,
-      ticketSigner: createTicketSigner(1, generateSigningKey()),
-    });
+    const app = await buildApp(testDependencies(pool));
     const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
     expect(response.json()).toEqual({ status: 'ok', database: 'ok' });
   });

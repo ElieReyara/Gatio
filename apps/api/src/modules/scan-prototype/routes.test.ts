@@ -3,13 +3,15 @@ import { parseTicketQr, prototypeSampleSchema, scanManifestSchema } from '@gatio
 import type pg from 'pg';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../../app.js';
+import { testDependencies } from '../../test-support.js';
 import { createTicketSigner, generateSigningKey } from '../tickets/signing.js';
 
 const pool = { query: async () => ({}) } as unknown as pg.Pool;
 const ticketSigner = createTicketSigner(1, generateSigningKey());
 
 async function app(nodeEnv: 'test' | 'production' = 'test') {
-  return buildApp({ config: { logLevel: 'silent', nodeEnv }, pool, ticketSigner });
+  const dependencies = testDependencies(pool, { ticketSigner });
+  return buildApp({ ...dependencies, config: { ...dependencies.config, nodeEnv } });
 }
 
 function signatureIsValid(qr: string, publicKey: string) {

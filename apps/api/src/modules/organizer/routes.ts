@@ -19,11 +19,12 @@ import {
   type Category,
   type OrganizerEvent,
 } from '@gatio/shared';
-import { and, asc, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db, DbOrTx } from '../../db/client.js';
 import { events, organizers, ticketCategories } from '../../db/schema.js';
+import { writeAudit } from '../../lib/audit.js';
 import { AppError } from '../../lib/errors.js';
 import { computeFee } from '../fees/compute.js';
 import { resolveFeeRule } from '../fees/rules.js';
@@ -195,6 +196,7 @@ export const organizerRoutes =
         const body = request.body;
         const updated = await db.transaction(async (tx) => {
           const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
+          assertNotCancelled(event);
           if (body.startsAt && new Date(body.startsAt).getTime() !== event.startsAt.getTime()) {
             assertFuture(body.startsAt);
             await assertCategoryPeriodsStillValid(tx, event.id, new Date(body.startsAt));
@@ -239,6 +241,7 @@ export const organizerRoutes =
       { schema: { params: idParams, response: { 200: organizerEventSchema, ...errors } } },
       async (request) => {
         const event = await ownedEvent(db, me(request).organizerId, request.params.id);
+        assertNotCancelled(event);
         const image = Buffer.isBuffer(request.body) ? await toEventImage(request.body) : null;
         if (!image) {
           throw new AppError(400, 'VALIDATION_ERROR', 'Image illisible.', {
@@ -271,6 +274,7 @@ export const organizerRoutes =
         const category = await db.transaction(async (tx) => {
           // Verrou de l'événement : deux créations simultanées ne dépassent pas la capacité (R11).
           const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
+          assertNotCancelled(event);
           assertSalePeriod(body.saleStartsAt ?? null, body.saleEndsAt ?? null, event.startsAt);
           await assertPriceNotTooLow(tx, event, null, body.priceAmount);
           const used = await allocatedQuantity(tx, event.id);
@@ -373,6 +377,71 @@ export const organizerRoutes =
       },
     );
 
+    // Publication, report et annulation (R34). Chaque passage est une mise à jour
+    // conditionnelle sur le statut : deux demandes simultanées ne se contredisent pas.
+    app.post(
+      '/organizer/events/:id/publish',
+      { schema: { params: idParams, response: { 200: organizerEventDetailSchema, ...errors } } },
+      async (request) =>
+        db.transaction(async (tx) => {
+          const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
+          const [organizer] = await tx
+            .select({ payoutMethod: organizers.payoutMethod })
+            .from(organizers)
+            .where(eq(organizers.id, event.organizerId));
+          if (!organizer?.payoutMethod) {
+            throw new AppError(
+              400,
+              'VALIDATION_ERROR',
+              'Un moyen de versement est nécessaire pour publier.',
+              {
+                reason: 'payout_account_missing',
+              },
+            );
+          }
+          assertFuture(event.startsAt.toISOString());
+          const row = await changeStatus(tx, event, ['draft', 'postponed'], 'published');
+          if (event.status === 'postponed') {
+            await writeAudit(tx, auditEntry(request, 'event.republish', event, row));
+          }
+          return eventDetail(tx, row);
+        }),
+    );
+
+    app.post(
+      '/organizer/events/:id/unpublish',
+      { schema: { params: idParams, response: { 200: organizerEventDetailSchema, ...errors } } },
+      async (request) =>
+        db.transaction(async (tx) => {
+          const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
+          return eventDetail(tx, await changeStatus(tx, event, ['published'], 'draft'));
+        }),
+    );
+
+    app.post(
+      '/organizer/events/:id/postpone',
+      { schema: { params: idParams, response: { 200: organizerEventDetailSchema, ...errors } } },
+      async (request) =>
+        db.transaction(async (tx) => {
+          const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
+          const row = await changeStatus(tx, event, ['published'], 'postponed');
+          await writeAudit(tx, auditEntry(request, 'event.postpone', event, row));
+          return eventDetail(tx, row);
+        }),
+    );
+
+    app.post(
+      '/organizer/events/:id/cancel',
+      { schema: { params: idParams, response: { 200: organizerEventDetailSchema, ...errors } } },
+      async (request) =>
+        db.transaction(async (tx) => {
+          const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
+          const row = await changeStatus(tx, event, ['published', 'postponed'], 'cancelled');
+          await writeAudit(tx, auditEntry(request, 'event.cancel', event, row));
+          return eventDetail(tx, row);
+        }),
+    );
+
     // DELETE = archivage (contrat §6.4) : une catégorie n'est jamais supprimée (R11).
     app.delete(
       '/organizer/categories/:id',
@@ -396,6 +465,58 @@ export const organizerRoutes =
         }),
     );
   };
+
+type EventStatus = EventRow['status'];
+
+async function changeStatus(db: DbOrTx, event: EventRow, from: EventStatus[], to: EventStatus) {
+  const [row] = await db
+    .update(events)
+    .set({ status: to, updatedAt: sql`now()` })
+    .where(and(eq(events.id, event.id), inArray(events.status, from)))
+    .returning();
+  if (!row) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Ce changement n’est pas possible pour cet événement.',
+      {
+        reason: 'invalid_status',
+        status: event.status,
+      },
+    );
+  }
+  return row;
+}
+
+function assertNotCancelled(event: EventRow) {
+  if (event.status === 'cancelled') {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Cet événement est annulé : il ne peut plus être modifié.',
+      {
+        reason: 'event_cancelled',
+      },
+    );
+  }
+}
+
+function auditEntry(
+  request: { ip: string; organizer?: { userId: string } },
+  action: string,
+  before: EventRow,
+  after: EventRow,
+) {
+  return {
+    actorUserId: request.organizer!.userId,
+    action,
+    entityType: 'event',
+    entityId: before.id,
+    before: { status: before.status, startsAt: before.startsAt.toISOString() },
+    after: { status: after.status, startsAt: after.startsAt.toISOString() },
+    ip: request.ip,
+  };
+}
 
 // S5 : un organisateur ne voit que ses événements ; un autre reçoit « introuvable ».
 async function ownedEvent(
@@ -423,6 +544,7 @@ async function ownedCategory(db: DbOrTx, organizerId: string, categoryId: string
     .where(and(eq(ticketCategories.id, categoryId), eq(events.organizerId, organizerId)));
   if (!found) throw new AppError(404, 'NOT_FOUND', 'Catégorie introuvable.');
   const event = await ownedEvent(db, organizerId, found.eventId, true);
+  assertNotCancelled(event);
   const [category] = await db
     .select()
     .from(ticketCategories)

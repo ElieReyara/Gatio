@@ -212,3 +212,20 @@ export const feeRules = pgTable(
     index('fee_rules_scope_idx').on(table.scope, table.scopeId),
   ],
 );
+
+// Journal d'audit des actions sensibles (S6).
+export const auditLog = pgTable(
+  'audit_log',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    actorUserId: uuid('actor_user_id').references(() => users.id),
+    action: text('action').notNull(),
+    entityType: text('entity_type').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    before: jsonb('before'),
+    after: jsonb('after'),
+    ip: inet('ip'),
+    createdAt: createdAt(),
+  },
+  (table) => [index('audit_log_entity_idx').on(table.entityType, table.entityId)],
+);

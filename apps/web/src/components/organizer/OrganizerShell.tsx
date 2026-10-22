@@ -69,7 +69,7 @@ export function OrganizerShell({
 
 export function EventTabs({ eventId, active }: { eventId: string; active: 'info' | 'tickets' }) {
   const tabs = [
-    { key: 'info' as const, href: `/organisateur/evenements/${eventId}` },
+    { key: 'info' as const, href: `/organisateur/evenements/${eventId}/infos` },
     { key: 'tickets' as const, href: `/organisateur/evenements/${eventId}/billets` },
   ];
   return (

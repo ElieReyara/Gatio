@@ -1,27 +1,29 @@
-import { organizerEventDetailSchema } from '@gatio/shared';
+import { organizerEventDetailSchema, organizerProfileSchema } from '@gatio/shared';
 import type { Metadata } from 'next';
-import { EventForm } from '@/components/organizer/EventForm';
-import { EventTabs, OrganizerShell } from '@/components/organizer/OrganizerShell';
+import { OrganizerShell } from '@/components/organizer/OrganizerShell';
+import { PublicationPanel } from '@/components/organizer/PublicationPanel';
 import { getAsOrganizer, segment } from '@/lib/server-api';
+import { siteUrl } from '@/lib/site';
 import { texts } from '@/texts/fr';
 
-export const metadata: Metadata = { title: texts.app.name };
+export const metadata: Metadata = { title: `${texts.app.name} · ${texts.space.publication.title}` };
 export const dynamic = 'force-dynamic';
 
-// Onglet « Infos » : le formulaire O3 rempli (écran complété, journal de bord n° 64).
-export default async function EventInfoPage({ params }: { params: Promise<{ id: string }> }) {
+// Vue d'un événement côté organisateur (maquette O5 et proposition « report ») :
+// publication, lien de vente, ventes, report, annulation.
+export default async function EventOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const event = await getAsOrganizer(
-    `/organizer/events/${segment(id)}`,
-    organizerEventDetailSchema,
-  );
+  const [event, profile] = await Promise.all([
+    getAsOrganizer(`/organizer/events/${segment(id)}`, organizerEventDetailSchema),
+    getAsOrganizer('/organizer/profile', organizerProfileSchema),
+  ]);
   return (
-    <OrganizerShell
-      title={event.title}
-      backHref="/organisateur"
-      tabs={<EventTabs eventId={id} active="info" />}
-    >
-      <EventForm event={event} />
+    <OrganizerShell title={texts.space.publication.title} backHref="/organisateur" section="events">
+      <PublicationPanel
+        event={event}
+        hasPayoutAccount={profile.payoutAccount !== null}
+        saleUrl={`${siteUrl()}/e/${event.slug}`}
+      />
     </OrganizerShell>
   );
 }

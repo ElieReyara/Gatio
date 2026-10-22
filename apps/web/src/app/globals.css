@@ -754,3 +754,263 @@ body {
   padding: var(--space-2) 0;
   text-align: left;
 }
+
+/* Pages acheteur (maquettes B1 et B2). */
+.public-header {
+  padding: var(--space-3) var(--space-4);
+}
+
+.public-home {
+  text-decoration: none;
+}
+
+.event-cover {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  background: var(--sand);
+}
+
+.event-cover--default {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+}
+
+.event-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.event-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.event-card-title {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.filters {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.filters select {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px var(--space-4);
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.chip.is-active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-4);
+  text-align: center;
+}
+
+.empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 44px;
+  background: var(--sand);
+  color: var(--brand);
+}
+
+.display {
+  margin: 0;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: var(--space-2) 0 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.category {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.category--off {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.category-name {
+  font-weight: 700;
+}
+
+.category-price {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.category-note {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.tag {
+  flex: none;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--success-tint);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.tag--upcoming {
+  background: var(--warning-tint);
+}
+
+.tag--ended,
+.tag--sold_out,
+.tag--stopped {
+  background: var(--sand);
+}
+
+.status-banner {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+}
+
+.status-banner--cancelled {
+  background: var(--danger);
+  color: var(--on-brand);
+}
+
+.status-banner--postponed {
+  background: var(--warning);
+  color: var(--ink);
+}
+
+.public-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.public-footer .link {
+  text-align: left;
+}
+
+.contact-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.contact-option small {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.page--flush-top {
+  padding-top: 0;
+}
+
+.button-auto {
+  flex: none;
+  width: auto;
+}
+
+.fine-print--left {
+  text-align: left;
+}
+
+.description {
+  white-space: pre-line;
+}
+
+.event-page {
+  padding-top: var(--space-4);
+}
+
+.status-banner--rounded {
+  border-radius: var(--radius-md);
+}
+
+.link-box {
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  word-break: break-all;
+}

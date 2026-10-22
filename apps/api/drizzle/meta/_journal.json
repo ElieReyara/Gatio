@@ -29,6 +29,13 @@
       "when": 1792694117047,
       "tag": "0003_seed_platform_fee",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792704518949,
+      "tag": "0004_audit_log",
+      "breakpoints": true
     }
   ]
 }

@@ -20,7 +20,7 @@ export default async function EventTicketsPage({ params }: { params: Promise<{ i
   return (
     <OrganizerShell
       title={event.title}
-      backHref="/organisateur"
+      backHref={`/organisateur/evenements/${id}`}
       tabs={<EventTabs eventId={id} active="tickets" />}
     >
       <Link

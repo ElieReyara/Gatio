@@ -12,7 +12,7 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | N° | Tranche | Priorité | Dépend de | Critère de terminé (résumé, détail dans le plan) | PC | Statut |
 |---|---|---|---|---|---|---|
 | 0 | Squelette de bout en bout | Haute | — | Lancement en une commande sur un poste neuf ; CI et `pnpm verify` verts | PC-0a ✔, PC-0b ✔ | terminé (22/10/2026) |
-| 1 | Prototype QR signé et scan hors ligne | Haute | 0 | Scan en mode avion sur iPhone et Android réels, QR ajouté après téléchargement accepté, densité lisible | PC-1 | en attente de contrôle (PC-1) |
+| 1 | Prototype QR signé et scan hors ligne | Haute | 0 | Scan en mode avion sur iPhone et Android réels, QR ajouté après téléchargement accepté, densité lisible | PC-1 | en attente de contrôle (Android réussi le 22/10/2026 ; iPhone à faire) |
 | 2 | Compte organisateur et mot de passe oublié | Haute | 0 | Inscription, connexion, réinitialisation ; isolation testée ; réponse identique email inconnu | PC-2 | à faire |
 | 3 | Événement, catégories, période de vente, aperçu des frais | Haute | 2 | 4 lignes du tableau des frais testées ; prix trop bas refusé ; règles de période testées | PC-3 | à faire |
 | 4 | Publication, page publique, recherche, annulation/report, signalement | Haute | 3 | Aperçu de partage ; poids mesuré ; bandeaux ; republication ; lien support pré-rempli | PC-4 | à faire |

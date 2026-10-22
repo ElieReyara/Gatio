@@ -1,0 +1,11 @@
+{
+  "name": "Gatio · Contrôle des entrées",
+  "short_name": "Gatio Scan",
+  "lang": "fr",
+  "start_url": "/scan",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1f1a14",
+  "theme_color": "#1f1a14",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

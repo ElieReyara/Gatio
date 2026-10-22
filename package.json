@@ -12,6 +12,7 @@
     "dev": "pnpm services && pnpm build:shared && pnpm db:migrate && pnpm --parallel --filter ./apps/* dev",
     "dev:api": "pnpm services && pnpm build:shared && pnpm db:migrate && pnpm --filter @gatio/api dev",
     "dev:web": "pnpm build:shared && pnpm --filter @gatio/web dev",
+    "start:web": "pnpm build:shared && pnpm --filter @gatio/web build && pnpm --filter @gatio/web start",
     "db:migrate": "pnpm --filter @gatio/api db:migrate",
     "build": "pnpm -r build",
     "typecheck": "pnpm build:shared && pnpm -r typecheck",

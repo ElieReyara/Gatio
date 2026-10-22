@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { InjectOptions } from 'fastify';
 import { buildApp } from './app.js';
+import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
 
 const config = { logLevel: 'silent', nodeEnv: 'test' } as const;
+const ticketSigner = createTicketSigner(1, generateSigningKey());
 
 function fakePool(query: () => Promise<unknown>) {
   return { query } as unknown as pg.Pool;
@@ -13,7 +15,11 @@ function fakePool(query: () => Promise<unknown>) {
 
 describe('GET /api/v1/health', () => {
   it('répond ok quand la base répond', async () => {
-    const app = await buildApp({ config, pool: fakePool(async () => ({ rows: [] })) });
+    const app = await buildApp({
+      config,
+      ticketSigner,
+      pool: fakePool(async () => ({ rows: [] })),
+    });
     const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: 'ok', database: 'ok' });
@@ -22,6 +28,7 @@ describe('GET /api/v1/health', () => {
   it('répond 503 quand la base est injoignable', async () => {
     const app = await buildApp({
       config,
+      ticketSigner,
       pool: fakePool(async () => {
         throw new Error('connection refused');
       }),
@@ -34,7 +41,7 @@ describe('GET /api/v1/health', () => {
 
 describe('format d’erreur commun', () => {
   it('renvoie NOT_FOUND au format du contrat pour une route inconnue', async () => {
-    const app = await buildApp({ config, pool: fakePool(async () => ({})) });
+    const app = await buildApp({ config, ticketSigner, pool: fakePool(async () => ({})) });
     const response = await app.inject({ method: 'GET', url: '/api/v1/inconnue' });
     expect(response.statusCode).toBe(404);
     const body = errorResponseSchema.parse(response.json());
@@ -44,7 +51,7 @@ describe('format d’erreur commun', () => {
 
 describe('format d’erreur commun selon le statut', () => {
   async function appWithTestRoutes() {
-    const app = await buildApp({ config, pool: fakePool(async () => ({})) });
+    const app = await buildApp({ config, ticketSigner, pool: fakePool(async () => ({})) });
     app.post('/test/body', { schema: { body: z.object({ name: z.string() }) } }, async () => ({}));
     app.get('/test/limited', async () => {
       throw Object.assign(new Error('Rate limit exceeded'), { statusCode: 429 });
@@ -90,7 +97,7 @@ describe('format d’erreur commun selon le statut', () => {
 
 describe('OpenAPI', () => {
   it('est généré depuis les schémas et décrit la route de santé', async () => {
-    const app = await buildApp({ config, pool: fakePool(async () => ({})) });
+    const app = await buildApp({ config, ticketSigner, pool: fakePool(async () => ({})) });
     const response = await app.inject({ method: 'GET', url: '/api/v1/openapi.json' });
     expect(response.statusCode).toBe(200);
     expect(response.json().paths).toHaveProperty('/api/v1/health');

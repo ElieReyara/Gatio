@@ -12,13 +12,16 @@ import type { Config } from './config.js';
 import { AppError } from './lib/errors.js';
 import { maskPersonalData, serializeError } from './lib/redact.js';
 import { healthRoutes } from './modules/health/routes.js';
+import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
+import type { TicketSigner } from './modules/tickets/signing.js';
 
 export type AppDependencies = {
   config: Pick<Config, 'logLevel' | 'nodeEnv'>;
   pool: pg.Pool;
+  ticketSigner: TicketSigner;
 };
 
-export async function buildApp({ config, pool }: AppDependencies) {
+export async function buildApp({ config, pool, ticketSigner }: AppDependencies) {
   const app = Fastify({
     logger: {
       level: config.logLevel,
@@ -62,6 +65,9 @@ export async function buildApp({ config, pool }: AppDependencies) {
   await app.register(
     async (api) => {
       await api.register(healthRoutes(pool));
+      if (config.nodeEnv !== 'production') {
+        await api.register(scanPrototypeRoutes(ticketSigner), { prefix: '/dev/scan-prototype' });
+      }
       api.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger());
     },
     { prefix: '/api/v1' },

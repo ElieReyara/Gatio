@@ -7,8 +7,16 @@ import type { NextConfig } from 'next';
 const rootEnvFile = fileURLToPath(new URL('../../.env', import.meta.url));
 if (existsSync(rootEnvFile)) process.loadEnvFile(rootEnvFile);
 
+// Relais vers l'API : le navigateur (et le téléphone derrière un tunnel) ne connaît que
+// le site. Fixé au build ; l'absence d'API_URL en production est refusée à l'exécution
+// par src/lib/api.ts.
+const apiUrl = process.env.API_URL ?? 'http://127.0.0.1:4000';
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  async rewrites() {
+    return [{ source: '/api/v1/:path*', destination: `${apiUrl}/api/v1/:path*` }];
+  },
 };
 
 export default nextConfig;

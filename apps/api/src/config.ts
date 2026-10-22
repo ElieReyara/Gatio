@@ -13,6 +13,7 @@ const localDefaults = {
   API_PORT: '4000',
   DATABASE_URL: 'postgres://gatio:gatio@localhost:5432/gatio',
   LOG_LEVEL: 'info',
+  TICKET_SIGNING_KEY_ID: '1',
 };
 
 const envSchema = z.object({
@@ -20,6 +21,9 @@ const envSchema = z.object({
   API_PORT: z.coerce.number().int().positive(),
   DATABASE_URL: z.string().url(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']),
+  TICKET_SIGNING_KEY_ID: z.coerce.number().int().min(0).max(255),
+  // Facultative en développement (clé éphémère), obligatoire en production.
+  TICKET_SIGNING_PRIVATE_KEY: z.string().min(1).optional(),
 });
 
 export type Config = {
@@ -28,6 +32,7 @@ export type Config = {
   port: number;
   databaseUrl: string;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
+  ticketSigning: { keyId: number; privateKey: string | undefined };
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -40,12 +45,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     const fields = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');
     throw new Error(`Configuration invalide ou manquante : ${fields}`);
   }
+  if (nodeEnv === 'production' && !parsed.data.TICKET_SIGNING_PRIVATE_KEY) {
+    throw new Error('Configuration invalide ou manquante : TICKET_SIGNING_PRIVATE_KEY');
+  }
   return {
     nodeEnv,
     host: parsed.data.API_HOST,
     port: parsed.data.API_PORT,
     databaseUrl: parsed.data.DATABASE_URL,
     logLevel: parsed.data.LOG_LEVEL,
+    ticketSigning: {
+      keyId: parsed.data.TICKET_SIGNING_KEY_ID,
+      privateKey: parsed.data.TICKET_SIGNING_PRIVATE_KEY,
+    },
   };
 }
 

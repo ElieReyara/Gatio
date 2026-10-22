@@ -21,7 +21,15 @@ const shapes = {
 
 export type IconName = keyof typeof shapes;
 
-export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
+export function Icon({
+  name,
+  size = 24,
+  strokeWidth = 2,
+}: {
+  name: IconName;
+  size?: number;
+  strokeWidth?: number;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -29,7 +37,7 @@ export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
       height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

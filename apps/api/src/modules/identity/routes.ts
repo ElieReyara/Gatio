@@ -5,7 +5,6 @@ import {
   passwordForgotRequestSchema,
   passwordResetRequestSchema,
   registerRequestSchema,
-  type OrganizerProfile,
 } from '@gatio/shared';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -19,6 +18,7 @@ import { consumeLimit } from '../../lib/rate-limit.js';
 import { hashToken, newToken } from '../../lib/tokens.js';
 import type { EmailOutbox } from '../email/outbox.js';
 import { passwordResetEmail } from '../email/templates.js';
+import { loadProfile } from './profile.js';
 import {
   clearSessionCookie,
   readSessionToken,
@@ -248,21 +248,6 @@ export const identityRoutes =
       async (request) => loadProfile(db, request.organizer!.userId),
     );
   };
-
-async function loadProfile(db: Db, userId: string): Promise<OrganizerProfile> {
-  const [profile] = await db
-    .select({
-      email: users.email,
-      displayName: organizers.displayName,
-      description: organizers.description,
-      contactPhone: organizers.contactPhone,
-    })
-    .from(organizers)
-    .innerJoin(users, eq(users.id, organizers.userId))
-    .where(eq(users.id, userId));
-  if (!profile) throw new AppError(404, 'NOT_FOUND', 'Profil introuvable.');
-  return profile;
-}
 
 function isUniqueViolation(error: unknown): boolean {
   const cause = (error as { cause?: { code?: string } }).cause;

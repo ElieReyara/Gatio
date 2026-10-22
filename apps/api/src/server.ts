@@ -5,6 +5,7 @@ import { createJobQueue } from './jobs/boss.js';
 import { startMaintenance } from './jobs/maintenance.js';
 import { jobEmailOutbox, startEmailWorker } from './modules/email/outbox.js';
 import { mailpitEmail } from './modules/email/port.js';
+import { diskStorage } from './modules/media/storage.js';
 import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
 
 const config = loadConfig();
@@ -14,7 +15,13 @@ const ticketSigner = createTicketSigner(
   config.ticketSigning.keyId,
   config.ticketSigning.privateKey ?? generateSigningKey(),
 );
-const app = await buildApp({ config, pool, ticketSigner, emailOutbox: jobEmailOutbox(jobs) });
+const app = await buildApp({
+  config,
+  pool,
+  ticketSigner,
+  emailOutbox: jobEmailOutbox(jobs),
+  storage: diskStorage(config.storageDir),
+});
 if (!config.ticketSigning.privateKey) {
   app.log.warn('TICKET_SIGNING_PRIVATE_KEY absente : clé éphémère, QR invalides après redémarrage');
 }

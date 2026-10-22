@@ -17,6 +17,9 @@ import { maskPersonalData, serializeError } from './lib/redact.js';
 import type { EmailOutbox } from './modules/email/outbox.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { identityRoutes } from './modules/identity/routes.js';
+import { mediaRoutes } from './modules/media/routes.js';
+import type { StoragePort } from './modules/media/storage.js';
+import { organizerRoutes } from './modules/organizer/routes.js';
 import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
 import type { TicketSigner } from './modules/tickets/signing.js';
 
@@ -25,6 +28,7 @@ export type AppDependencies = {
   pool: pg.Pool;
   ticketSigner: TicketSigner;
   emailOutbox: EmailOutbox;
+  storage: StoragePort;
   runInBackground?: (task: () => Promise<void>) => void;
 };
 
@@ -35,6 +39,7 @@ export async function buildApp({
   pool,
   ticketSigner,
   emailOutbox,
+  storage,
   runInBackground,
 }: AppDependencies) {
   const db = drizzle({ client: pool, schema });
@@ -104,6 +109,10 @@ export async function buildApp({
           ...(runInBackground ? { runInBackground } : {}),
         }),
       );
+      await api.register(
+        organizerRoutes({ db, storage, secureCookies: config.nodeEnv === 'production' }),
+      );
+      await api.register(mediaRoutes(storage));
       if (config.nodeEnv !== 'production') {
         await api.register(scanPrototypeRoutes(ticketSigner), { prefix: '/dev/scan-prototype' });
       }

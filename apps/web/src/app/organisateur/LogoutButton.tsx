@@ -16,7 +16,7 @@ export function LogoutButton() {
         router.refresh();
       }}
     >
-      {texts.organizer.home.logout}
+      {texts.space.profile.logout}
     </button>
   );
 }

@@ -7,9 +7,11 @@ import {
   index,
   inet,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
+  boolean,
   text,
   timestamp,
   uuid,
@@ -102,4 +104,111 @@ export const rateLimitCounters = pgTable(
     count: integer('count').notNull().default(0),
   },
   (table) => [primaryKey({ columns: [table.key, table.windowStart] })],
+);
+
+// Événements et billets (tranche 3).
+export const eventStatus = pgEnum('event_status', [
+  'draft',
+  'published',
+  'postponed',
+  'cancelled',
+  'suspended',
+]);
+export const eventType = pgEnum('event_type', [
+  'concert',
+  'party',
+  'sport',
+  'conference',
+  'culture',
+  'other',
+]);
+export const feeScope = pgEnum('fee_scope', ['platform', 'organizer', 'event', 'category']);
+export const feeCalcType = pgEnum('fee_calc_type', ['percent_fixed', 'tiered']);
+
+export const events = pgTable(
+  'events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizerId: uuid('organizer_id')
+      .notNull()
+      .references(() => organizers.id),
+    slug: text('slug').notNull().unique(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    imageKey: text('image_key'),
+    eventType: eventType('event_type').notNull(),
+    city: text('city').notNull(),
+    venue: text('venue').notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    capacity: integer('capacity').notNull(),
+    status: eventStatus('status').notNull().default('draft'),
+    statusBeforeSuspension: eventStatus('status_before_suspension'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check('events_capacity_positive', sql`${table.capacity} > 0`),
+    index('events_status_starts_at_idx').on(table.status, table.startsAt),
+    index('events_city_idx').on(table.city),
+    index('events_organizer_id_idx').on(table.organizerId),
+  ],
+);
+
+export const ticketCategories = pgTable(
+  'ticket_categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    name: text('name').notNull(),
+    priceAmount: bigint('price_amount', { mode: 'number' }).notNull(),
+    currency: text('currency').notNull(),
+    quantityTotal: integer('quantity_total').notNull(),
+    quantitySold: integer('quantity_sold').notNull().default(0),
+    quantityReserved: integer('quantity_reserved').notNull().default(0),
+    position: integer('position').notNull().default(0),
+    saleStartsAt: timestamp('sale_starts_at', { withTimezone: true }),
+    saleEndsAt: timestamp('sale_ends_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    // Dernier filet de sécurité de l'anti-survente (modèle de données).
+    check(
+      'ticket_categories_stock',
+      sql`${table.quantitySold} >= 0 and ${table.quantityReserved} >= 0 and ${table.quantitySold} + ${table.quantityReserved} <= ${table.quantityTotal}`,
+    ),
+    check('ticket_categories_price_positive', sql`${table.priceAmount} > 0`),
+    check('ticket_categories_quantity_positive', sql`${table.quantityTotal} > 0`),
+    check(
+      'ticket_categories_sale_period',
+      sql`${table.saleStartsAt} is null or ${table.saleEndsAt} is null or ${table.saleEndsAt} > ${table.saleStartsAt}`,
+    ),
+    index('ticket_categories_event_id_idx').on(table.eventId),
+  ],
+);
+
+// Règles de frais : des données, jamais du code (instructions générales, règle 4).
+export const feeRules = pgTable(
+  'fee_rules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    scope: feeScope('scope').notNull(),
+    scopeId: uuid('scope_id'),
+    calcType: feeCalcType('calc_type').notNull(),
+    params: jsonb('params').notNull(),
+    currency: text('currency').notNull(),
+    validFrom: timestamp('valid_from', { withTimezone: true }).notNull(),
+    validTo: timestamp('valid_to', { withTimezone: true }),
+    isActive: boolean('is_active').notNull().default(true),
+    // Vide pour la règle de départ, créée par la migration.
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check('fee_rules_scope_id', sql`(${table.scope} = 'platform') = (${table.scopeId} is null)`),
+    index('fee_rules_scope_idx').on(table.scope, table.scopeId),
+  ],
 );

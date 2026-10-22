@@ -25,6 +25,7 @@ describe('configuration', () => {
       ALLOWED_ORIGINS: 'https://gatio.example',
       MAILPIT_URL: 'http://mailpit:8025',
       EMAIL_FROM: 'noreply@gatio.example',
+      STORAGE_DIR: '/var/lib/gatio/media',
     };
     expect(() => loadConfig(production)).toThrow(/TICKET_SIGNING_PRIVATE_KEY/);
     expect(loadConfig({ ...production, TICKET_SIGNING_PRIVATE_KEY: 'k' }).ticketSigning).toEqual({

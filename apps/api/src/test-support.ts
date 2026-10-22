@@ -1,6 +1,7 @@
 import type pg from 'pg';
 import type { AppDependencies } from './app.js';
 import { memoryEmailOutbox } from './modules/email/outbox.js';
+import { memoryStorage } from './modules/media/storage.js';
 import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
 
 // Dépendances de l'application pour les tests (base, signature et emails remplaçables).
@@ -27,6 +28,7 @@ export function testDependencies(
     pool,
     ticketSigner: createTicketSigner(1, generateSigningKey()),
     emailOutbox: memoryEmailOutbox(),
+    storage: memoryStorage(),
     runInBackground: (task) => {
       pending.push(task());
     },

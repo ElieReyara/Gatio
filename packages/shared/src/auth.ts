@@ -34,5 +34,9 @@ export const organizerProfileSchema = z.object({
   displayName: z.string(),
   description: z.string().nullable(),
   contactPhone: z.string().nullable(),
+  // Numéro de versement masqué (« +235 66 •• •• 56 ») : donnée sensible, jamais renvoyée en entier.
+  payoutAccount: z
+    .object({ method: z.enum(['airtel_money', 'moov_money']), maskedNumber: z.string() })
+    .nullable(),
 });
 export type OrganizerProfile = z.infer<typeof organizerProfileSchema>;

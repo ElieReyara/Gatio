@@ -19,6 +19,7 @@ const localDefaults = {
   ALLOWED_ORIGINS: 'http://localhost:3000,http://127.0.0.1:3000,https://*.trycloudflare.com',
   MAILPIT_URL: 'http://127.0.0.1:8025',
   EMAIL_FROM: 'noreply@gatio.local',
+  STORAGE_DIR: '.data/media',
 };
 
 const envSchema = z.object({
@@ -30,6 +31,8 @@ const envSchema = z.object({
   // Envoi des emails : seule la boîte de test Mailpit existe avant la tranche 16.
   MAILPIT_URL: z.string().url(),
   EMAIL_FROM: z.email(),
+  // Dossier des images en développement (stockage S3 en production, tranche 16/17).
+  STORAGE_DIR: z.string().min(1),
   API_HOST: z.string().min(1),
   API_PORT: z.coerce.number().int().positive(),
   DATABASE_URL: z.string().url(),
@@ -49,6 +52,7 @@ export type Config = {
   webUrl: string;
   allowedOrigins: string[];
   email: { mailpitUrl: string; from: string };
+  storageDir: string;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -77,6 +81,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     webUrl: parsed.data.WEB_URL.replace(/\/$/, ''),
     allowedOrigins: parsed.data.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()),
     email: { mailpitUrl: parsed.data.MAILPIT_URL, from: parsed.data.EMAIL_FROM },
+    storageDir: parsed.data.STORAGE_DIR,
   };
 }
 

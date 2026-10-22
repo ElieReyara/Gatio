@@ -160,6 +160,10 @@ export const texts = {
       imageTooBig: 'Cette image dépasse 5 Mo. Choisissez-en une plus légère.',
       imageInvalid: 'Ce fichier n’est pas une image lisible. Choisissez-en une autre.',
       imageUploading: 'Envoi de l’image…',
+      imageNotSaved:
+        'L’image n’a pas été enregistrée. Vous pouvez en choisir une autre dans l’onglet Infos.',
+      periodConflict: (names: string) =>
+        `Avec cette date, la période de vente de ces catégories ne serait plus possible : ${names}. Modifiez-les d’abord.`,
       city: 'Ville',
       cityPlaceholder: 'Choisir une ville',
       cityMissing: 'Choisissez une ville.',
@@ -219,7 +223,7 @@ export const texts = {
       priceTooLow: 'Ce prix est trop bas : les frais dépasseraient ce que vous recevez.',
       quantity: 'Nombre de billets',
       quantityMissing: 'Indiquez au moins 1 billet.',
-      capacityHelp: (capacity: number) => `Capacité de l’événement : ${capacity} billets.`,
+      capacityHelp: (capacity: string) => `Capacité de l’événement : ${capacity} billets.`,
       capacityExceeded: (remaining: number) =>
         `Il reste ${remaining} billet${remaining > 1 ? 's' : ''} dans la capacité de l’événement.`,
       belowSold: 'Ce nombre est plus petit que les billets déjà vendus ou réservés.',
@@ -236,6 +240,8 @@ export const texts = {
       saleEnd: 'Fin de la vente',
       saleEndHelp: 'La vente peut se terminer après le début de l’événement.',
       periodInvalid: 'La fin de la vente doit être après son début.',
+      saleEndRequired:
+        'Sans date de fin, la vente s’arrête au début de l’événement : choisissez une fin après le début de la vente.',
       submit: 'Enregistrer la catégorie',
     },
     profile: {

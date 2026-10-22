@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CategoryForm } from '@/components/organizer/CategoryForm';
 import { EventTabs, OrganizerShell } from '@/components/organizer/OrganizerShell';
-import { getAsOrganizer } from '@/lib/server-api';
+import { getAsOrganizer, segment } from '@/lib/server-api';
 import { texts } from '@/texts/fr';
 
 export const metadata: Metadata = {
@@ -18,7 +18,10 @@ export default async function EditCategoryPage({
   params: Promise<{ id: string; categoryId: string }>;
 }) {
   const { id, categoryId } = await params;
-  const event = await getAsOrganizer(`/organizer/events/${id}`, organizerEventDetailSchema);
+  const event = await getAsOrganizer(
+    `/organizer/events/${segment(id)}`,
+    organizerEventDetailSchema,
+  );
   const category = event.categories.find(
     (item) => item.id === categoryId && item.archivedAt === null,
   );

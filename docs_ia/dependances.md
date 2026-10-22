@@ -23,6 +23,7 @@ Les versions sont fixées à l'installation (tranche 0) et notées ici.
 | pg + @types/pg | 8.23.1 | Pilote PostgreSQL | Drizzle, pg-boss, tests | `apps/api/src/db/client.ts` | Idem |
 | pg-boss | 12.37.0 | Tâches de fond | Démarré avec l'API (aucune tâche encore) ; crée son propre schéma `pgboss` hors des migrations Drizzle (modèle de données : « on ne les modélise pas ») | `apps/api/src/jobs/boss.ts` | Idem |
 | argon2 | 0.45.1 | Hachage des mots de passe (argon2id, 19 Mio, 2 passes) | Inscription, connexion, réinitialisation | `apps/api/src/lib/passwords.ts` ; script d'installation autorisé (`pnpm.onlyBuiltDependencies`) | Responsable, 22/10/2026 |
+| sharp | 0.35.5 | Ré-encodage des images en WebP (1 200 px, sans métadonnées) | Image d'événement | `apps/api/src/modules/media/images.ts` ; script d'installation autorisé | Responsable, 22/10/2026 |
 | tsx | 4.23.15 | Exécution TypeScript en développement | `pnpm dev:api`, drizzle-kit | `apps/api/package.json` | Idem |
 | next | 16.4.0 | Interface web | Rendu serveur | `apps/web` | Idem |
 | react, react-dom (+ @types) | 19.3.0 | Interface web | Composants | `apps/web/src` | Idem |

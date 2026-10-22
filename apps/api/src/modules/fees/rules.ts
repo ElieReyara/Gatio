@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import type { DbOrTx } from '../../db/client.js';
 import { feeRules } from '../../db/schema.js';
 import type { PercentFixedParams } from './compute.js';
@@ -7,6 +8,11 @@ import type { PercentFixedParams } from './compute.js';
 // l'emporte (catégorie > événement > organisateur > plateforme) ; à égalité, la plus récente.
 export type FeeTarget = { organizerId: string; eventId?: string; categoryId?: string };
 export type AppliedRule = { id: string; currency: string; params: PercentFixedParams };
+
+const percentFixedParams = z.object({
+  percent_bps: z.number().int().min(0).max(10_000),
+  fixed_amount: z.number().int().min(0),
+});
 
 const precision = sql<number>`case ${feeRules.scope}
   when 'category' then 4 when 'event' then 3 when 'organizer' then 2 else 1 end`;
@@ -44,7 +50,8 @@ export async function resolveFeeRule(db: DbOrTx, target: FeeTarget): Promise<App
   // Un seul type de calcul construit au lancement (§9) ; les paliers existent dans la structure.
   if (rule.calcType !== 'percent_fixed')
     throw new Error(`fee calc type not built: ${rule.calcType}`);
-  const params = rule.params as { percent_bps: number; fixed_amount: number };
+  // Une règle mal saisie (future administration) ne doit jamais produire de montant faux.
+  const params = percentFixedParams.parse(rule.params);
   return {
     id: rule.id,
     currency: rule.currency,

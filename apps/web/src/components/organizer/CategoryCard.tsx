@@ -22,14 +22,7 @@ export function salePeriodText(category: Pick<Category, 'saleStartsAt' | 'saleEn
 }
 
 // Carte d'une catégorie côté organisateur : nom, prix, ce qu'il reçoit, quantité, période.
-export function CategoryCard({
-  eventId,
-  category,
-}: {
-  eventId: string;
-  eventStartsAt: string;
-  category: Category;
-}) {
+export function CategoryCard({ eventId, category }: { eventId: string; category: Category }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);

@@ -32,6 +32,7 @@ export function CategoryForm({
   const [errors, setErrors] = useState<Errors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const previewIsCurrent = preview !== null && preview.price === parseAmount(price);
 
   // L'aperçu suit le prix dès qu'il change (cahier §4).
   useEffect(() => {
@@ -45,7 +46,8 @@ export function CategoryForm({
         price: amount,
         eventId,
       });
-      if (result.ok) setPreview(result.data);
+      // Réseau lent : une réponse arrivée après une nouvelle saisie ne remplace pas l'aperçu.
+      if (result.ok && result.data.price === amount) setPreview(result.data);
     }, 300);
     return () => clearTimeout(timer);
   }, [price, eventId]);
@@ -59,7 +61,7 @@ export function CategoryForm({
     const payload = {
       name: form.name ?? '',
       priceAmount: parseAmount(price) ?? 0,
-      quantityTotal: form.quantityTotal ?? '',
+      quantityTotal: parseAmount(form.quantityTotal ?? '') ?? 0,
       saleStartsAt: customPeriod ? fromChadInput(form.saleStartsAt ?? '') : null,
       saleEndsAt: customPeriod ? fromChadInput(form.saleEndsAt ?? '') : null,
     };
@@ -73,7 +75,7 @@ export function CategoryForm({
         if (field === 'quantityTotal') next.quantityTotal = t.quantityMissing;
       }
     }
-    if (preview?.priceTooLow) next.priceAmount = t.priceTooLow;
+    if (previewIsCurrent && preview?.priceTooLow) next.priceAmount = t.priceTooLow;
     setErrors(next);
     setFailure(null);
     if (Object.keys(next).length > 0 || !parsed.success) return;
@@ -94,6 +96,7 @@ export function CategoryForm({
       setErrors({ quantityTotal: t.capacityExceeded(Number(details.remaining ?? 0)) });
     } else if (details.reason === 'below_sold') setErrors({ quantityTotal: t.belowSold });
     else if (details.reason === 'sale_period_invalid') setErrors({ saleEndsAt: t.periodInvalid });
+    else if (details.reason === 'sale_end_required') setErrors({ saleEndsAt: t.saleEndRequired });
     else setFailure(texts.form.networkError);
   }
 
@@ -141,7 +144,7 @@ export function CategoryForm({
         name="quantityTotal"
         inputMode="numeric"
         defaultValue={category?.quantityTotal}
-        help={t.capacityHelp(capacity)}
+        help={t.capacityHelp(formatNumber(capacity))}
         error={errors.quantityTotal}
       />
       <div className="card">
@@ -186,7 +189,7 @@ export function CategoryForm({
       <button
         type="submit"
         className="button-primary"
-        disabled={busy || preview?.priceTooLow === true}
+        disabled={busy || (previewIsCurrent && preview?.priceTooLow === true)}
       >
         {busy ? texts.space.saving : t.submit}
       </button>

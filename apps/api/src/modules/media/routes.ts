@@ -16,6 +16,7 @@ export const mediaRoutes =
         if (!data) return reply.callNotFound();
         return reply
           .header('content-type', 'image/webp')
+          .header('x-content-type-options', 'nosniff')
           .header('cache-control', 'public, max-age=31536000, immutable')
           .send(data);
       },

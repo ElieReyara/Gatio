@@ -19,7 +19,7 @@ import {
   type Category,
   type OrganizerEvent,
 } from '@gatio/shared';
-import { and, asc, desc, eq, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db, DbOrTx } from '../../db/client.js';
@@ -55,9 +55,9 @@ export const organizerRoutes =
     const me = (request: { organizer?: { organizerId: string; userId: string } }) =>
       request.organizer!;
 
-    // Image d'événement envoyée telle quelle (Content-Type image/*) : pas de multipart.
+    // Image envoyée telle quelle (JPEG, PNG ou WebP) : pas de multipart.
     app.addContentTypeParser(
-      /^image\//,
+      /^image\/(jpeg|png|webp)$/,
       { parseAs: 'buffer', bodyLimit: IMAGE_MAX_BYTES },
       (_request, body, done) => done(null, body),
     );
@@ -153,8 +153,13 @@ export const organizerRoutes =
               eq(events.organizerId, me(request).organizerId),
               cursor
                 ? or(
-                    lt(events.createdAt, cursor.createdAt),
-                    and(eq(events.createdAt, cursor.createdAt), lt(events.id, cursor.id)),
+                    // Curseur à la milliseconde, comme la base comparée (sinon un événement
+                    // créé dans la même milliseconde serait sauté).
+                    lt(sql`date_trunc('milliseconds', ${events.createdAt})`, cursor.createdAt),
+                    and(
+                      eq(sql`date_trunc('milliseconds', ${events.createdAt})`, cursor.createdAt),
+                      lt(events.id, cursor.id),
+                    ),
                   )
                 : undefined,
             ),
@@ -192,6 +197,7 @@ export const organizerRoutes =
           const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
           if (body.startsAt && new Date(body.startsAt).getTime() !== event.startsAt.getTime()) {
             assertFuture(body.startsAt);
+            await assertCategoryPeriodsStillValid(tx, event.id, new Date(body.startsAt));
           }
           if (body.capacity !== undefined) {
             const used = await allocatedQuantity(tx, event.id);
@@ -371,22 +377,23 @@ export const organizerRoutes =
     app.delete(
       '/organizer/categories/:id',
       { schema: { params: idParams, response: { 200: categorySchema, ...errors } } },
-      async (request) => {
-        const { event, category } = await ownedCategory(
-          db,
-          me(request).organizerId,
-          request.params.id,
-        );
-        const [row] = await db
-          .update(ticketCategories)
-          .set({
-            archivedAt: sql`coalesce(${ticketCategories.archivedAt}, now())`,
-            updatedAt: sql`now()`,
-          })
-          .where(eq(ticketCategories.id, category.id))
-          .returning();
-        return serializeCategory(db, event, row!);
-      },
+      async (request) =>
+        db.transaction(async (tx) => {
+          const { event, category } = await ownedCategory(
+            tx,
+            me(request).organizerId,
+            request.params.id,
+          );
+          const [row] = await tx
+            .update(ticketCategories)
+            .set({
+              archivedAt: sql`coalesce(${ticketCategories.archivedAt}, now())`,
+              updatedAt: sql`now()`,
+            })
+            .where(eq(ticketCategories.id, category.id))
+            .returning();
+          return serializeCategory(tx, event, row!);
+        }),
     );
   };
 
@@ -406,15 +413,48 @@ async function ownedEvent(
   return event;
 }
 
+// Ordre des verrous toujours le même (événement, puis catégorie) : aucun interblocage
+// avec la création de catégorie, ni plus tard avec la réservation (tranche 5).
 async function ownedCategory(db: DbOrTx, organizerId: string, categoryId: string) {
-  const [row] = await db
-    .select({ category: ticketCategories, event: events })
+  const [found] = await db
+    .select({ eventId: ticketCategories.eventId })
     .from(ticketCategories)
     .innerJoin(events, eq(events.id, ticketCategories.eventId))
-    .where(and(eq(ticketCategories.id, categoryId), eq(events.organizerId, organizerId)))
+    .where(and(eq(ticketCategories.id, categoryId), eq(events.organizerId, organizerId)));
+  if (!found) throw new AppError(404, 'NOT_FOUND', 'Catégorie introuvable.');
+  const event = await ownedEvent(db, organizerId, found.eventId, true);
+  const [category] = await db
+    .select()
+    .from(ticketCategories)
+    .where(eq(ticketCategories.id, categoryId))
     .for('update');
-  if (!row) throw new AppError(404, 'NOT_FOUND', 'Catégorie introuvable.');
-  return row;
+  return { event, category: category! };
+}
+
+// Changer la date de l'événement déplace la fin de vente par défaut (R12) : une catégorie
+// ne doit pas se retrouver avec une période impossible.
+async function assertCategoryPeriodsStillValid(db: DbOrTx, eventId: string, newStartsAt: Date) {
+  const rows = await db
+    .select()
+    .from(ticketCategories)
+    .where(and(eq(ticketCategories.eventId, eventId), isNull(ticketCategories.archivedAt)));
+  const conflicts = rows.filter((row) => {
+    const start = row.saleStartsAt?.getTime() ?? null;
+    const end = (row.saleEndsAt ?? newStartsAt).getTime();
+    return start !== null && end <= start;
+  });
+  if (conflicts.length > 0) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Des périodes de vente deviendraient impossibles.',
+      {
+        field: 'startsAt',
+        reason: 'sale_period_conflict',
+        categories: conflicts.map((row) => row.name),
+      },
+    );
+  }
 }
 
 // Billets prévus : quantités des catégories actives, et billets déjà vendus ou réservés
@@ -471,9 +511,10 @@ function assertSalePeriod(startsAt: string | null, endsAt: string | null, eventS
   const start = startsAt ? new Date(startsAt).getTime() : null;
   const end = endsAt ? new Date(endsAt).getTime() : eventStartsAt.getTime();
   if (start !== null && end <= start) {
+    // Sans fin choisie, la vente s'arrête au début de l'événement : il faut choisir une fin.
     throw new AppError(400, 'VALIDATION_ERROR', 'La fin de la vente doit être après son début.', {
       field: 'saleEndsAt',
-      reason: 'sale_period_invalid',
+      reason: endsAt ? 'sale_period_invalid' : 'sale_end_required',
     });
   }
 }

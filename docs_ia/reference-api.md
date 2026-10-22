@@ -15,6 +15,15 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | POST `/auth/logout` | organisateur | 2 | → 204, session révoquée, cookie effacé | idem | — |
 | POST `/auth/password/forgot` | public (limité : 3 par email, 20 par IP / h) | 2 | `{email}` → 202 `{}` toujours ; recherche et envoi après la réponse | idem | — |
 | POST `/auth/password/reset` | public (limité : 20 par IP / h) | 2 | `{token, newPassword}` → 200 ; ferme toutes les sessions et les autres liens ; 400 `TOKEN_INVALID` | idem | — |
+| PUT `/organizer/profile` | organisateur | 3 | `profileUpdateSchema` (nom affiché, description, téléphone +235) → profil | `organizer.test.ts` | — |
+| PUT `/organizer/payout-account` | organisateur | 3 | `payoutAccountSchema` (`airtel_money`/`moov_money`, numéro +235) → profil, numéro **masqué** | idem | Deux moyens à l'écran comme la maquette O2 (un seul adaptateur réel en tranche 16) |
+| POST `/organizer/fee-preview` | organisateur | 3 | `{price, eventId?}` → `feePreviewSchema` (R2, R7) | idem | Sans `categoryId` (dette D10) |
+| POST/GET `/organizer/events` | organisateur | 3 | Création (brouillon, slug de 8 caractères) ; liste `{items, nextCursor}` (`?cursor=&limit=`) | idem | — |
+| GET/PATCH `/organizer/events/{id}` | organisateur | 3 | Détail avec catégories et frais ; modification (capacité ≥ billets prévus, périodes de vente revérifiées si la date change) | idem | Autre organisateur → 404 `NOT_FOUND` |
+| POST `/organizer/events/{id}/image` | organisateur | 3 | Corps brut `image/jpeg`, `image/png` ou `image/webp`, 5 Mo → WebP 1 200 px | idem | **Corps brut au lieu de multipart** (aucune dépendance de plus) ; autre type → 415 |
+| POST `/organizer/events/{id}/categories` | organisateur | 3 | `categoryCreateSchema` → catégorie avec frais ; R3 `PRICE_TOO_LOW`, R11 capacité, R12 période | idem | — |
+| PATCH/DELETE `/organizer/categories/{id}` | organisateur | 3 | Modification (quantité ≥ vendus + réservés, condition dans l'UPDATE) ; DELETE = archivage | idem | — |
+| GET `/media/{clé}` | public | 3 | Image WebP, cache d'un an, `nosniff` | idem | Ajout : sert les images du stockage disque (S3 en production) |
 | GET `/organizer/profile` | organisateur | 2 | `organizerProfileSchema` (email, displayName, description, contactPhone) | idem | PUT reporté en tranche 3 avec l'écran O2 (journal de bord n° 63) |
 | GET `/openapi.json` | public | 0 | Document OpenAPI généré depuis les schémas Zod (routes cachées exclues) | `apps/api/src/app.test.ts` | Ajout : le contrat (§6.1) demande la documentation générée sans fixer son adresse |
 
@@ -25,6 +34,7 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | `UNAUTHENTICATED` / `FORBIDDEN` / `RATE_LIMITED` | 401 / 403 / 429 (par correspondance de statut) | toutes |
 | `NOT_FOUND` | 404 | toute adresse inconnue |
 | `TOKEN_INVALID` | 400 | `/auth/password/reset` |
+| `PRICE_TOO_LOW` | 400 | création et modification de catégorie |
 | `FORBIDDEN` | 403 | toute modification d'une origine non autorisée (S2) |
 | `INTERNAL_ERROR` | 500 | toutes (message générique, détail seulement dans les journaux masqués) |
 

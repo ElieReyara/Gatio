@@ -14,7 +14,7 @@ import { Banner } from '@/components/Banner';
 import { Field, SelectField, TextAreaField } from '@/components/form/Field';
 import { Icon } from '@/components/Icon';
 import { sendJson, uploadImage, type ApiResult } from '@/lib/api-client';
-import { fromChadInput, toChadInput } from '@/lib/format';
+import { fromChadInput, parseAmount, toChadInput } from '@/lib/format';
 import { texts } from '@/texts/fr';
 
 const t = texts.space.eventForm;
@@ -41,6 +41,7 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
   const [failure, setFailure] = useState<string | null>(null);
   const [state, setState] = useState<'idle' | 'saving' | 'uploading' | 'saved' | 'created'>('idle');
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     if (!file) return;
@@ -70,7 +71,11 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
       string
     >;
     const startsAt = fromChadInput(form.startsAt ?? '');
-    const payload = { ...form, startsAt: startsAt ?? '', capacity: form.capacity ?? '' };
+    const payload = {
+      ...form,
+      startsAt: startsAt ?? '',
+      capacity: parseAmount(form.capacity ?? '') ?? 0,
+    };
     delete (payload as Record<string, unknown>).image;
     const parsed = eventCreateSchema.safeParse(payload);
     const next: Errors = errors.image ? { image: errors.image } : {};
@@ -99,6 +104,9 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
       if (reason === 'not_in_future') setErrors({ startsAt: t.startsAtPast });
       else if (reason === 'below_categories') {
         setErrors({ capacity: t.capacityBelow(Number(result.error?.details.allocated ?? 0)) });
+      } else if (reason === 'sale_period_conflict') {
+        const names = (result.error?.details.categories as string[] | undefined) ?? [];
+        setErrors({ startsAt: t.periodConflict(names.join(', ')) });
       } else setFailure(texts.form.networkError);
       return;
     }
@@ -107,9 +115,17 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
       setState('uploading');
       const upload = await uploadImage<OrganizerEvent>(`/organizer/events/${id}/image`, file);
       if (!upload.ok) {
+        // 413 : trop lourde ; sinon : format refusé ou illisible.
+        const imageError = upload.status === 413 ? t.imageTooBig : t.imageInvalid;
+        if (!event) {
+          // L'événement existe déjà : on montre le succès, en signalant l'image refusée.
+          setImageFailed(true);
+          setCreatedId(id);
+          setState('created');
+          return;
+        }
         setState('idle');
-        setErrors({ image: upload.status === 400 ? t.imageInvalid : t.imageTooBig });
-        if (!event) router.replace(`/organisateur/evenements/${id}`);
+        setErrors({ image: imageError });
         return;
       }
       setFile(null);
@@ -127,6 +143,7 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
     return (
       <>
         <Banner kind="success">{t.created}</Banner>
+        {imageFailed && <Banner kind="error">{t.imageNotSaved}</Banner>}
         <p className="lead">{t.nextStep}</p>
         <Link
           className="button-primary button-link"

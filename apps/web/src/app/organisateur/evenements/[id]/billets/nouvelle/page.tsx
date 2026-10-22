@@ -2,7 +2,7 @@ import { organizerEventDetailSchema } from '@gatio/shared';
 import type { Metadata } from 'next';
 import { CategoryForm } from '@/components/organizer/CategoryForm';
 import { EventTabs, OrganizerShell } from '@/components/organizer/OrganizerShell';
-import { getAsOrganizer } from '@/lib/server-api';
+import { getAsOrganizer, segment } from '@/lib/server-api';
 import { texts } from '@/texts/fr';
 
 export const metadata: Metadata = {
@@ -12,7 +12,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function NewCategoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const event = await getAsOrganizer(`/organizer/events/${id}`, organizerEventDetailSchema);
+  const event = await getAsOrganizer(
+    `/organizer/events/${segment(id)}`,
+    organizerEventDetailSchema,
+  );
   return (
     <OrganizerShell
       title={event.title}

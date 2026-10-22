@@ -265,7 +265,7 @@ describe('catégories de billets', () => {
       quantityTotal: 10,
       saleStartsAt: later,
     });
-    expect(errorOf(startOnly).details).toMatchObject({ reason: 'sale_period_invalid' });
+    expect(errorOf(startOnly).details).toMatchObject({ reason: 'sale_end_required' });
   });
 
   it('ne dépasse jamais la capacité, même avec des créations simultanées (R11)', async () => {
@@ -362,6 +362,123 @@ describe('catégories de billets', () => {
       payload: { priceAmount: 6_000 },
     });
     expect(categorySchema.parse(updated.json()).fee.payoutAmount).toBe(6_000 - 340);
+  });
+
+  it('refuse de déplacer l’événement si une période de vente devenait impossible (R12)', async () => {
+    const start = inOneMonth();
+    const { id } = await createEvent(alice, { startsAt: start.toISOString() });
+    const saleStart = new Date(start.getTime() - 5 * 24 * 3600 * 1000);
+    await createCategory(alice, id, {
+      name: 'Prévente',
+      priceAmount: 3_000,
+      quantityTotal: 10,
+      saleStartsAt: saleStart.toISOString(),
+    });
+    const earlier = new Date(saleStart.getTime() - 24 * 3600 * 1000).toISOString();
+    const response = await call(alice, {
+      method: 'PATCH',
+      url: `/api/v1/organizer/events/${id}`,
+      payload: { startsAt: earlier },
+    });
+    expect(errorOf(response).details).toMatchObject({
+      reason: 'sale_period_conflict',
+      categories: ['Prévente'],
+    });
+  });
+
+  it('distingue un début seul après l’événement (choisir une fin)', async () => {
+    const start = inOneMonth();
+    const { id } = await createEvent(alice, { startsAt: start.toISOString() });
+    const response = await createCategory(alice, id, {
+      name: 'Jour J',
+      priceAmount: 7_000,
+      quantityTotal: 10,
+      saleStartsAt: new Date(start.getTime() + 3600 * 1000).toISOString(),
+    });
+    expect(errorOf(response).details).toMatchObject({ reason: 'sale_end_required' });
+  });
+});
+
+describe('appartenance sur toutes les routes de l’événement (S5)', () => {
+  it('un autre organisateur ne peut ni ajouter de catégorie, ni d’image, ni calculer avec cet événement', async () => {
+    const { id } = await createEvent(alice);
+    expect(
+      errorOf(await createCategory(bob, id, { name: 'X', priceAmount: 5_000, quantityTotal: 1 }))
+        .code,
+    ).toBe('NOT_FOUND');
+    const png = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#000' } })
+      .png()
+      .toBuffer();
+    const image = await call(bob, {
+      method: 'POST',
+      url: `/api/v1/organizer/events/${id}/image`,
+      payload: png,
+      headers: { 'content-type': 'image/png' },
+    });
+    expect(errorOf(image).code).toBe('NOT_FOUND');
+    const preview = await call(bob, {
+      method: 'POST',
+      url: '/api/v1/organizer/fee-preview',
+      payload: { price: 5_000, eventId: id },
+    });
+    expect(errorOf(preview).code).toBe('NOT_FOUND');
+  });
+
+  it('refuse un anonyme', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/v1/organizer/events' });
+    expect(errorOf(response).code).toBe('UNAUTHENTICATED');
+  });
+});
+
+describe('format des images (§3.8)', () => {
+  it('refuse un SVG, même annoncé comme PNG', async () => {
+    const { id } = await createEvent(alice);
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>');
+    const announcedPng = await call(alice, {
+      method: 'POST',
+      url: `/api/v1/organizer/events/${id}/image`,
+      payload: svg,
+      headers: { 'content-type': 'image/png' },
+    });
+    expect(errorOf(announcedPng).details).toMatchObject({ reason: 'invalid_image' });
+    const declaredSvg = await call(alice, {
+      method: 'POST',
+      url: `/api/v1/organizer/events/${id}/image`,
+      payload: svg,
+      headers: { 'content-type': 'image/svg+xml' },
+    });
+    expect(declaredSvg.statusCode).toBe(415);
+  });
+});
+
+describe('résolution de la règle de frais (R4)', () => {
+  it('la règle de la catégorie l’emporte ; à égalité de portée, la plus récente', async () => {
+    const { id } = await createEvent(alice);
+    const category = categorySchema.parse(
+      (
+        await createCategory(alice, id, {
+          name: 'Standard',
+          priceAmount: 10_000,
+          quantityTotal: 10,
+        })
+      ).json(),
+    );
+    const insertRule = (scope: string, scopeId: string, bps: number, validFrom: string) =>
+      pool.query(
+        `insert into fee_rules (scope, scope_id, calc_type, params, currency, valid_from)
+         values ($1, $2, 'percent_fixed', $3, 'XAF', now() - $4::interval)`,
+        [scope, scopeId, JSON.stringify({ percent_bps: bps, fixed_amount: 0 }), validFrom],
+      );
+    const fee = async () =>
+      categorySchema.parse(
+        (await call(alice, { method: 'GET', url: `/api/v1/organizer/events/${id}` })).json()
+          .categories[0],
+      ).fee.percentBps;
+    await insertRule('event', id, 200, '2 hours');
+    await insertRule('category', category.id, 100, '2 hours');
+    expect(await fee()).toBe(100);
+    await insertRule('category', category.id, 150, '1 hour');
+    expect(await fee()).toBe(150);
   });
 });
 

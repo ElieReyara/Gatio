@@ -1,0 +1,43 @@
+# Retour d'expérience — leçons pour les prochains projets
+
+Demandé par le responsable le 22/10/2026 : noter, au fil du projet, chaque problème de méthode
+pour qu'il ne se reproduise pas. Ce document complète le registre d'erreurs (erreurs techniques,
+`registre-erreurs.md`) : ici, ce qui relève de la préparation, des rôles et de l'organisation.
+
+Chaque leçon : ce qui s'est passé · conséquence · ce qu'il faut faire la prochaine fois · qui.
+
+## Design et maquettes
+
+| N° | Ce qui s'est passé | Conséquence | La prochaine fois | Qui |
+|---|---|---|---|---|
+| L1 | Des écrans nécessaires n'avaient pas de planche : liste « Mes événements », liste, modification et archivage des catégories, modification d'un événement, report et republication, liste des événements en administration, page de support. | Arrêts pour demander ; écrans complétés par l'agent, à valider après coup. | Avant de livrer, le designer déroule **chaque parcours de bout en bout** et vérifie, pour **chaque objet** (événement, catégorie, porte…) : liste, création, consultation, modification, suppression ou archivage, et l'opération inverse. Une liste de contrôle par objet est jointe aux maquettes. | Designer |
+| L2 | Les maquettes étaient en retard sur des décisions déjà prises : double saisie du numéro absente de B3, renvoi du billet « par SMS » en A7 au lieu de l'email, deux moyens de versement en O2, reversements regroupés en O9, nom affiché absent de l'inscription O1. | Écarts à arbitrer pendant le développement. | Après chaque révision du cahier ou du journal des décisions, le designer **relit les entrées du journal** et met les planches à jour ; une colonne « décisions vérifiées jusqu'au n° … » figure sur chaque planche. | Designer, chef de projet |
+| L3 | Certains états n'étaient décrits qu'en texte (« autres messages de cet écran : réservation expirée… ») ou absents (écran de démarrage du scan). | Textes et mise en page à inventer. | Chaque état listé dans « Éléments à fournir » a **sa** planche, même sobre ; un message d'erreur = un texte exact écrit sur la planche. | Designer |
+| L4 | Pas de feuille de route design distincte : il a fallu la reconstituer à partir du document « Éléments à fournir » et des maquettes. | Interprétation nécessaire au démarrage. | Fournir un plan de livraison des planches, aligné sur les tranches, avec un statut par écran (à faire, en cours, validé). | Designer |
+| L5 | Quelques couleurs des maquettes n'existent pas dans les jetons (vert de « Liste prête », fond de l'option choisie, voiles translucides). | Écart au système de design (dette D4). | Toute couleur utilisée sur une planche est d'abord ajoutée aux jetons. | Designer |
+
+## Conception et contenus
+
+| N° | Ce qui s'est passé | Conséquence | La prochaine fois | Qui |
+|---|---|---|---|---|
+| L6 | Des règles chiffrées n'étaient que sur les maquettes, pas dans la conception : mot de passe de 8 caractères, blocage 15 min, pourcentage de 0 à 20 %, numéro de 8 chiffres, délai de renvoi du code. | Hypothèses à confirmer. | Toute valeur affichée sur une maquette existe d'abord dans la conception (règle numérotée), et réciproquement. | Concepteur |
+| L7 | L'archivage d'une catégorie est prévu, mais pas l'opération inverse (désarchiver) : le responsable l'a remarqué à l'essai. | Fonction manquante découverte tard. | Pour chaque action, la conception dit explicitement si elle est **réversible** et comment (déjà fait pour le report d'un événement, pas pour l'archivage). | Concepteur |
+| L8 | Données de configuration attendues mais non fournies au démarrage : liste des villes, canal du support, adresse d'expédition des emails, nom de domaine. | Arrêts ou valeurs provisoires. | Rassembler ces données **avant** la tranche qui les utilise (document « Éléments à fournir », section 6), avec une date limite. | Responsable |
+| L9 | Le journal des décisions (entrées 1 à 19) cité par la conception n'était pas dans le dépôt. | Références impossibles à vérifier. | Tout document cité par un autre est livré avec lui. | Chef de projet |
+
+## Organisation des essais
+
+| N° | Ce qui s'est passé | Conséquence | La prochaine fois | Qui |
+|---|---|---|---|---|
+| L10 | La grille d'essai de la tranche 3 disait « puis 100 » sans préciser le champ ; l'essai a été fait dans « Nombre de billets » au lieu de « Prix ». | Faux défaut signalé. | Chaque étape de grille nomme **le champ exact, la valeur et le résultat attendu**. | Agent (rédaction des grilles) |
+| L11 | Premier essai sur téléphone fait avec le serveur de développement au lieu du site compilé (`pnpm start:web`). | Page bloquée (ERR-005). | La grille commence par les commandes exactes, à copier telles quelles ; l'essai sur téléphone se fait toujours avec le site compilé. | Agent |
+| L12 | Le téléphone d'essai partageait sa connexion avec l'ordinateur : le mode avion coupait aussi l'ordinateur. | Essai hors ligne cru impossible. | Prévoir dès la grille comment faire l'essai hors ligne avec le matériel disponible (ici : billets d'essai servis en local). | Agent |
+| L13 | Aucun iPhone disponible pour la tranche 1. | Critère « iPhone et Android » encore ouvert. | Lister le matériel d'essai nécessaire (appareils, comptes) au démarrage du projet et le réserver. | Responsable |
+
+## Technique et sécurité
+
+| N° | Ce qui s'est passé | Conséquence | La prochaine fois | Qui |
+|---|---|---|---|---|
+| L14 | Des failles **critiques** ont été publiées pour la version de Next.js installée (16.4.0) peu après son installation ; découvertes par un message de l'outil, pas par la CI. | Mise à jour de sécurité à faire en urgence. | `pnpm audit` dans la CI dès la tranche 0, qui échoue sur une faille haute ou critique ; audit relu à chaque clôture de tranche. | Agent |
+| L15 | Problèmes propres au poste Windows : chemins de plus de 260 caractères (ERR-002), fins de ligne réécrites (ERR-003), accents mal passés à `curl` (ERR-008), pnpm 12 non lancé par corepack. | Temps perdu à diagnostiquer. | Au démarrage : cloner dans un chemin court, fixer `.gitattributes`, tester l'outillage complet sur le poste réel avant la tranche 0. | Agent |
+| L16 | Comportements d'outils découverts en route : Next.js ne transmet pas l'adresse du client (D2), refuse en silence les adresses de tunnel en développement, envoie des statistiques par défaut ; pg-boss ne met pas à jour une file existante (ERR-006). | Corrections au fil de l'eau. | Pour chaque outil retenu, une courte fiche « pièges connus » relue avant de l'utiliser (le registre d'erreurs en tient lieu ici). | Agent |

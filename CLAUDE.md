@@ -33,9 +33,10 @@ qu'elles sont ouvertes, appliquer la valeur proposée si elle est indiquée.
 ## 2. Stack réelle
 Sources : instructions générales, cahier de conception §2, §3 et §7.
 Versions fixées en tranche 0 (détail dans `docs_ia/dependances.md`) : Node 22,
-pnpm 10.34.6, TypeScript 6.0.3, Next.js 16.4.0 + React 19.3.0, Fastify 5.12.5,
+pnpm 10.34.6, TypeScript 6.0.3, Next.js 16.4.2 + React 19.3.0, Fastify 5.12.7,
 Zod 4.6.5, Drizzle ORM 0.45.3, pg-boss 12.37.0, PostgreSQL 17, Vitest 5.0.3.
-Règle pour une nouvelle version : publiée depuis au moins 2 semaines.
+Règle pour une nouvelle version : publiée depuis au moins 2 semaines, sauf correctif de sécurité
+(Next.js 16.4.2 et Fastify 5.12.7, 22/10/2026). Audit `pnpm audit --prod` dans la CI.
 
 | Couche | Technologie et version |
 |---|---|
@@ -216,6 +217,7 @@ docs_ia/
 ├── etat-fonctionnalites.md   ce qui marche réellement, par fonctionnalité
 ├── reference-api.md          routes réellement implémentées et écarts au contrat
 ├── registre-erreurs.md       ID · date · contexte · message · cause · solution · prévention
+├── retour-experience.md      leçons de méthode pour les prochains projets (design, conception, essais)
 ├── dependances.md            dépendances : rôle, usage, fichiers, accord
 ├── journal/AAAA-MM-JJ.md     journaux de session
 ├── controle/                 dossiers de contrôle et rapports de revue (un fichier par arrêt)
@@ -228,6 +230,7 @@ docs_ia/
 | Nouveau point d'échange | `docs_ia/reference-api.md` |
 | Nouvelle entité ou champ | Migration + proposition de mise à jour du modèle de données (source) dans le journal de bord et le dossier de contrôle |
 | Erreur rencontrée | `docs_ia/registre-erreurs.md` |
+| Problème de méthode (planche manquante, règle absente, grille ambiguë…) | `docs_ia/retour-experience.md` (demande du responsable, 22/10/2026) |
 | Fonctionnalité terminée | `docs_ia/etat-fonctionnalites.md` + `docs_ia/suivi-avancement.md` |
 | Dépendance ajoutée | `docs_ia/dependances.md` (rôle, usage, fichiers) |
 | Changement d'architecture | Proposition de mise à jour du cahier de conception (source) dans le journal de bord et le dossier de contrôle |

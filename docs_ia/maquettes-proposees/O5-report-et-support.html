@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Proposition — O5 report et page de support (tranche 4)</title>
+<style>
+:root{--bg:#faf6ef;--surface:#fff;--ink:#1f1a14;--muted:#5c5248;--brand:#a8431a;--line:#e4dacb;--cb:#8c7f70;--sand:#e8d9bf;--ok:#15803d;--okt:#e3f3e8;--warn:#f59e0b;--warnt:#fdf0cf;--bad:#b91c1c;--badt:#fbe4e4}
+body{margin:0;background:#efe7da;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink)}
+.board{display:flex;flex-wrap:wrap;gap:40px;padding:40px;align-items:flex-start}
+.intro{max-width:900px;padding:40px 40px 0;font-size:16px;line-height:24px}
+.lab{font-size:14px;line-height:20px;color:var(--muted);font-weight:700;margin-bottom:8px;max-width:390px}
+.ph{width:390px;height:780px;background:var(--bg);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box;position:relative}
+.top{display:flex;align-items:center;gap:8px;padding:8px 16px;min-height:56px;font-size:16px;line-height:24px;font-weight:700;color:var(--brand)}
+.body{padding:8px 16px 16px;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:24px;line-height:30px;font-weight:700}
+.btn{box-sizing:border-box;min-height:48px;width:100%;border-radius:12px;font-size:16px;line-height:24px;font-weight:700;padding:12px 16px;border:2px solid transparent;background:var(--brand);color:#fff;text-align:center}
+.btn.sec{background:var(--surface);color:var(--ink);border-color:var(--cb)}
+.btn.badl{background:var(--surface);color:var(--bad);border-color:var(--bad)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.f label{display:block;font-size:16px;line-height:24px;font-weight:700;margin-bottom:4px}
+.f .i{box-sizing:border-box;min-height:48px;border:2px solid var(--cb);border-radius:8px;background:var(--surface);padding:10px 12px;font-size:16px;line-height:24px}
+.f .i.e{border-color:var(--bad)}
+.f .h{font-size:14px;line-height:20px;color:var(--muted);margin-top:4px}
+.f .er{font-size:14px;line-height:20px;color:var(--bad);font-weight:700;margin-top:4px}
+.ban{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:12px;font-size:16px;line-height:24px}
+.ban.warn{background:var(--warn)}.ban.okb{background:var(--okt)}.ban.badt{background:var(--badt)}.ban.info{background:var(--warnt)}
+.ic{flex:none;width:24px;height:24px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.nav{margin-top:auto;display:flex;border-top:1px solid var(--line);background:var(--surface)}
+.nav span{flex:1;text-align:center;padding:12px 0;font-size:14px;line-height:20px;font-weight:700;color:var(--muted)}
+.nav span.on{color:var(--brand)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 16px;display:flex;flex-direction:column;gap:12px}
+.shade{position:absolute;inset:0;background:rgba(31,26,20,.55)}
+.opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 16px;border:2px solid var(--cb);border-radius:12px;background:var(--surface);font-size:16px;line-height:24px;font-weight:700;color:var(--ink);text-decoration:none}
+.opt small{display:block;font-weight:400;color:var(--muted);font-size:14px;line-height:20px}
+.lnk{color:var(--brand);font-weight:700;text-decoration:underline;text-align:center;padding:12px 0;display:block}
+.note{font-size:14px;line-height:20px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="intro">
+<h1>Proposition de maquette — report d'un événement et page de support</h1>
+<p>Écrans manquants de la tranche 4, proposés par l'agent avec les jetons et composants des planches O5 et B2 (journal de bord n° 64). À valider ou corriger par le responsable avant le développement. Les valeurs entre crochets sont à fournir (numéro WhatsApp et adresse email du support).</p>
+</div>
+<div class="board">
+
+<div>
+<div class="lab">1 · O5 Confirmation : reporter l'événement (même feuille que « Annuler », bouton principal non rouge : le report est réversible)</div>
+<div class="ph">
+<div class="top">Mes événements</div>
+<div class="body">
+<h1>Soirée Sahel Live</h1>
+<div class="card"><b>Lien de vente</b><div class="f"><div class="i" style="background:var(--bg)">gatio.example/e/k7m2x9</div></div></div>
+<div class="card"><b>Ventes</b><span>48 billets vendus sur 500</span></div>
+</div>
+<div class="shade"></div>
+<div class="sheet" role="dialog">
+<div style="font-size:24px;line-height:30px;font-weight:700">Reporter cet événement ?</div>
+<p style="margin:0">Les ventes s'arrêtent et la page affiche « Événement reporté ». Les billets déjà vendus restent valables pour la nouvelle date.</p>
+<div class="btn">Oui, reporter l'événement</div>
+<div class="btn sec">Non, revenir en arrière</div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="lab">2 · O5 Événement reporté : choisir la nouvelle date et republier</div>
+<div class="ph">
+<div class="top">Mes événements</div>
+<div class="body">
+<div class="ban warn"><span class="ic" style="background:var(--ink)">!</span><span><b>Événement reporté.</b> Les ventes sont arrêtées en attendant une nouvelle date.</span></div>
+<h1>Soirée Sahel Live</h1>
+<div class="card"><b>Nouvelle date</b>
+<div class="f"><label>Date et heure</label><div class="i">Samedi 5 décembre, 19 h</div><div class="h">Vérifiez aussi les périodes de vente de vos catégories.</div></div>
+<div class="btn">Republier avec la nouvelle date</div></div>
+<div class="card"><b>Ventes</b><span>48 billets vendus sur 500</span></div>
+<div class="btn badl">Annuler l'événement</div>
+</div>
+<div class="nav"><span class="on">Événements</span><span>Reversements</span><span>Profil</span></div>
+</div>
+</div>
+
+<div>
+<div class="lab">3 · O5 Erreur : nouvelle date impossible</div>
+<div class="ph">
+<div class="top">Mes événements</div>
+<div class="body">
+<div class="ban warn"><span class="ic" style="background:var(--ink)">!</span><span><b>Événement reporté.</b> Les ventes sont arrêtées en attendant une nouvelle date.</span></div>
+<h1>Soirée Sahel Live</h1>
+<div class="card"><b>Nouvelle date</b>
+<div class="f"><label>Date et heure</label><div class="i e">Lundi 5 janvier, 19 h</div><div class="er">! La date doit être dans le futur.</div></div>
+<div class="btn">Republier avec la nouvelle date</div></div>
+<div class="ban badt"><span class="ic" style="background:var(--bad)">✕</span><span>Avec cette date, la période de vente de « Prévente » ne serait plus possible. Modifiez-la d'abord dans l'onglet Billets.</span></div>
+</div>
+<div class="nav"><span class="on">Événements</span><span>Reversements</span><span>Profil</span></div>
+</div>
+</div>
+
+<div>
+<div class="lab">4 · O5 Succès : republié avec la nouvelle date</div>
+<div class="ph">
+<div class="top">Mes événements</div>
+<div class="body">
+<div class="ban okb"><span class="ic" style="background:var(--ok)">✓</span><span><b>Votre événement est de nouveau en vente.</b> Nouvelle date : samedi 5 décembre, 19 h.</span></div>
+<h1>Soirée Sahel Live</h1>
+<div class="card"><b>Lien de vente</b><div class="f"><div class="i" style="background:var(--bg)">gatio.example/e/k7m2x9</div></div><div class="btn">Copier le lien</div><div class="btn sec">Partager sur WhatsApp</div></div>
+<p class="note" style="margin:0">Le lien de vente ne change pas. Les liens de vos contrôleurs restent valables jusqu'à 24 h après la nouvelle date.</p>
+</div>
+<div class="nav"><span class="on">Événements</span><span>Reversements</span><span>Profil</span></div>
+</div>
+</div>
+
+<div>
+<div class="lab">5 · Page de support (nouvelle, demande du responsable) : ouverte par « Contacter le support » depuis la page d'un événement</div>
+<div class="ph">
+<div class="top">Gatio</div>
+<div class="body">
+<h1>Contacter le support</h1>
+<p style="margin:0">Un problème avec <b>Soirée Sahel Live</b> ? Écrivez-nous par le moyen qui vous convient. Votre message contiendra déjà le nom de l'événement et son lien.</p>
+<a class="opt" href="#"><span class="ic" style="background:var(--ok)">✓</span><span>WhatsApp<small>[Numéro WhatsApp du support]</small></span></a>
+<a class="opt" href="#"><span class="ic" style="background:var(--brand)">@</span><span>Email<small>[Adresse email du support]</small></span></a>
+<div class="ban info"><span class="ic" style="background:var(--ink)">i</span><span>Pour un remboursement, contactez d'abord l'organisateur : c'est lui qui rembourse les billets.</span></div>
+<a class="lnk" href="#">Retour à l'événement</a>
+</div>
+</div>
+</div>
+
+<div>
+<div class="lab">6 · Page de support ouverte sans événement (lien direct, pied de page)</div>
+<div class="ph">
+<div class="top">Gatio</div>
+<div class="body">
+<h1>Contacter le support</h1>
+<p style="margin:0">Une question ou un problème ? Écrivez-nous par le moyen qui vous convient.</p>
+<a class="opt" href="#"><span class="ic" style="background:var(--ok)">✓</span><span>WhatsApp<small>[Numéro WhatsApp du support]</small></span></a>
+<a class="opt" href="#"><span class="ic" style="background:var(--brand)">@</span><span>Email<small>[Adresse email du support]</small></span></a>
+<a class="lnk" href="#">Voir les événements</a>
+</div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

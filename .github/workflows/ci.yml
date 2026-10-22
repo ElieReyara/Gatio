@@ -36,6 +36,9 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      # Leçon L14 : une faille haute ou critique dans le code mis en ligne fait échouer la CI.
+      - name: Audit de sécurité des dépendances
+        run: pnpm audit --prod --audit-level=high
       - name: Migrations (application sur base vide et cohérence)
         run: pnpm db:migrate && pnpm --filter @gatio/api db:check
       - name: Aucune migration oubliée par rapport au schéma

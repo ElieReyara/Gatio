@@ -37,6 +37,8 @@ export type IdentityDependencies = {
   emailOutbox: EmailOutbox;
   webUrl: string;
   secureCookies: boolean;
+  // Travail fait après la réponse ; les tests le remplacent pour pouvoir l'attendre.
+  runInBackground?: (task: () => Promise<void>) => void;
 };
 
 const RESET_MINUTES = 30;
@@ -44,9 +46,22 @@ const accepted = z.object({});
 const errors = { 400: errorResponseSchema, 401: errorResponseSchema, 429: errorResponseSchema };
 
 export const identityRoutes =
-  ({ db, emailOutbox, webUrl, secureCookies }: IdentityDependencies): FastifyPluginAsyncZod =>
+  ({
+    db,
+    emailOutbox,
+    webUrl,
+    secureCookies,
+    runInBackground,
+  }: IdentityDependencies): FastifyPluginAsyncZod =>
   async (app) => {
     const tooMany = () => new AppError(429, 'RATE_LIMITED', 'Trop d’essais. Réessayez plus tard.');
+    const background =
+      runInBackground ??
+      ((task: () => Promise<void>) => {
+        void task().catch((error: unknown) =>
+          app.log.error({ err: error }, 'background task failed'),
+        );
+      });
 
     app.post(
       '/auth/register',
@@ -135,7 +150,8 @@ export const identityRoutes =
       },
     );
 
-    // R36 : réponse toujours identique, que l'email existe, soit limité ou non.
+    // R36 : réponse toujours identique, que l'email existe, soit limité ou non. La recherche
+    // du compte et l'envoi se font après la réponse : sa durée ne révèle rien.
     app.post(
       '/auth/password/forgot',
       { schema: { body: passwordForgotRequestSchema, response: { 202: accepted, ...errors } } },
@@ -144,27 +160,29 @@ export const identityRoutes =
         const allowed =
           (await consumeLimit(db, `pwd_reset_ip:${request.ip}`, limits.passwordForgotPerIp)) &&
           (await consumeLimit(db, `pwd_reset:${email}`, limits.passwordForgotPerEmail));
-        if (allowed) {
-          const [user] = await db
-            .select({ id: users.id })
-            .from(users)
-            .where(and(eq(users.email, email), eq(users.role, 'organizer')));
-          if (user) {
-            const { token, hash } = newToken();
-            await db.insert(passwordResets).values({
-              userId: user.id,
-              tokenHash: hash,
-              expiresAt: sql`now() + make_interval(mins => ${RESET_MINUTES})`,
-              ip: request.ip,
-            });
-            // Jeton après le « # » : il n'apparaît dans aucun journal de serveur.
-            const link = `${webUrl}/organisateur/nouveau-mot-de-passe#token=${token}`;
-            await emailOutbox.enqueue(passwordResetEmail(email, link));
-          }
-        }
+        const ip = request.ip;
+        if (allowed) background(() => sendPasswordReset(email, ip));
         return reply.code(202).send({});
       },
     );
+
+    async function sendPasswordReset(email: string, ip: string) {
+      const [user] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.email, email), eq(users.role, 'organizer')));
+      if (!user) return;
+      const { token, hash } = newToken();
+      await db.insert(passwordResets).values({
+        userId: user.id,
+        tokenHash: hash,
+        expiresAt: sql`now() + make_interval(mins => ${RESET_MINUTES})`,
+        ip,
+      });
+      // Jeton après le « # » : il n'apparaît dans aucun journal de serveur.
+      const link = `${webUrl}/organisateur/nouveau-mot-de-passe#token=${token}`;
+      await emailOutbox.enqueue(passwordResetEmail(email, link));
+    }
 
     app.post(
       '/auth/password/reset',
@@ -176,6 +194,19 @@ export const identityRoutes =
           throw tooMany();
         }
         const { token, newPassword } = request.body;
+        const invalid = () => new AppError(400, 'TOKEN_INVALID', 'Ce lien n’est plus valable.');
+        // Vérification peu coûteuse avant argon2 : un jeton inventé ne coûte presque rien.
+        const [candidate] = await db
+          .select({ id: passwordResets.id })
+          .from(passwordResets)
+          .where(
+            and(
+              eq(passwordResets.tokenHash, hashToken(token)),
+              isNull(passwordResets.consumedAt),
+              gt(passwordResets.expiresAt, sql`now()`),
+            ),
+          );
+        if (!candidate) throw invalid();
         const passwordHash = await hashPassword(newPassword);
         const done = await db.transaction(async (tx) => {
           // Consommation atomique : un lien ne sert qu'une fois, même sur deux envois simultanés.
@@ -196,9 +227,14 @@ export const identityRoutes =
             .set({ passwordHash, updatedAt: sql`now()` })
             .where(eq(users.id, reset.userId));
           await revokeAllUserSessions(tx, reset.userId);
+          // Les autres liens encore valables de ce compte ne doivent plus servir.
+          await tx
+            .update(passwordResets)
+            .set({ consumedAt: sql`now()` })
+            .where(and(eq(passwordResets.userId, reset.userId), isNull(passwordResets.consumedAt)));
           return true;
         });
-        if (!done) throw new AppError(400, 'TOKEN_INVALID', 'Ce lien n’est plus valable.');
+        if (!done) throw invalid();
         return {};
       },
     );
@@ -206,7 +242,7 @@ export const identityRoutes =
     app.get(
       '/organizer/profile',
       {
-        preHandler: requireOrganizer(db),
+        preHandler: requireOrganizer(db, secureCookies),
         schema: { response: { 200: organizerProfileSchema, 401: errorResponseSchema } },
       },
       async (request) => loadProfile(db, request.organizer!.userId),

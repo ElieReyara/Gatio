@@ -25,11 +25,18 @@ export type AppDependencies = {
   pool: pg.Pool;
   ticketSigner: TicketSigner;
   emailOutbox: EmailOutbox;
+  runInBackground?: (task: () => Promise<void>) => void;
 };
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-export async function buildApp({ config, pool, ticketSigner, emailOutbox }: AppDependencies) {
+export async function buildApp({
+  config,
+  pool,
+  ticketSigner,
+  emailOutbox,
+  runInBackground,
+}: AppDependencies) {
   const db = drizzle({ client: pool, schema });
   const app = Fastify({
     // Le site relaie /api/v1 depuis la même machine : l'adresse du client vient alors
@@ -94,6 +101,7 @@ export async function buildApp({ config, pool, ticketSigner, emailOutbox }: AppD
           emailOutbox,
           webUrl: config.webUrl,
           secureCookies: config.nodeEnv === 'production',
+          ...(runInBackground ? { runInBackground } : {}),
         }),
       );
       if (config.nodeEnv !== 'production') {

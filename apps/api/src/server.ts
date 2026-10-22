@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
 import { createDatabase } from './db/client.js';
 import { createJobQueue } from './jobs/boss.js';
+import { startMaintenance } from './jobs/maintenance.js';
 import { jobEmailOutbox, startEmailWorker } from './modules/email/outbox.js';
 import { mailpitEmail } from './modules/email/port.js';
 import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
@@ -25,7 +26,9 @@ await jobs.start();
 await startEmailWorker(
   jobs,
   mailpitEmail(config.email.mailpitUrl, { email: config.email.from, name: 'Gatio' }),
+  app.log,
 );
+await startMaintenance(jobs, pool);
 await app.listen({ port: config.port, host: config.host });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

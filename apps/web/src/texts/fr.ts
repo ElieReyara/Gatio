@@ -60,7 +60,7 @@ export const texts = {
     show: 'Afficher',
     hide: 'Masquer',
     networkError: 'Le service ne répond pas. Vérifiez votre connexion et réessayez.',
-    tooManyAttempts: 'Trop d’essais. Réessayez dans 15 minutes.',
+    tooManyAttempts: 'Trop d’essais. Réessayez plus tard.',
   },
   // Maquettes O1 et E3 (+ « Nom affiché » de O2, ajouté à l'inscription le 22/10/2026).
   organizer: {

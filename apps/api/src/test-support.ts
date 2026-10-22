@@ -6,10 +6,17 @@ import { createTicketSigner, generateSigningKey } from './modules/tickets/signin
 // Dépendances de l'application pour les tests (base, signature et emails remplaçables).
 export const testOrigin = 'http://localhost:3000';
 
+type TestDependencies = AppDependencies & {
+  emailOutbox: ReturnType<typeof memoryEmailOutbox>;
+  // Attend le travail lancé après les réponses (envoi d'emails).
+  settle: () => Promise<void>;
+};
+
 export function testDependencies(
   pool: pg.Pool,
   overrides: Partial<Omit<AppDependencies, 'pool'>> = {},
-): AppDependencies & { emailOutbox: ReturnType<typeof memoryEmailOutbox> } {
+): TestDependencies {
+  const pending: Promise<void>[] = [];
   return {
     config: {
       logLevel: 'silent',
@@ -20,6 +27,12 @@ export function testDependencies(
     pool,
     ticketSigner: createTicketSigner(1, generateSigningKey()),
     emailOutbox: memoryEmailOutbox(),
+    runInBackground: (task) => {
+      pending.push(task());
+    },
+    settle: async () => {
+      await Promise.all(pending.splice(0));
+    },
     ...overrides,
-  } as AppDependencies & { emailOutbox: ReturnType<typeof memoryEmailOutbox> };
+  } as TestDependencies;
 }

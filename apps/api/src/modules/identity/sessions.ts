@@ -37,13 +37,14 @@ export async function findUserSession(db: Db, token: string) {
       ),
     );
   if (!session?.userId) return null;
-  if (Date.now() - session.lastSeenAt.getTime() > SLIDE_AFTER_MS) {
+  const slid = Date.now() - session.lastSeenAt.getTime() > SLIDE_AFTER_MS;
+  if (slid) {
     await db
       .update(authSessions)
       .set({ lastSeenAt: sql`now()`, expiresAt: expiresIn() })
       .where(eq(authSessions.id, session.id));
   }
-  return { sessionId: session.id, userId: session.userId };
+  return { sessionId: session.id, userId: session.userId, slid };
 }
 
 export async function revokeSession(db: Db, sessionId: string) {

@@ -7,7 +7,7 @@ Une ligne par fonctionnalité du plan unifié. États : non commencée · partie
 |---|---|---|---|---|---|
 | 0 | Squelette de bout en bout | — | terminée | `pnpm verify` (15 + 2 tests), test à froid, revue isolée, CI GitHub verte (run 39756846801) | |
 | 1 | QR signé et scan hors ligne (prototype) | C2 | réussie sur Android ; iPhone à essayer (PC-1) | `pnpm verify` (49 tests), revue isolée, essai du responsable sur Android en mode avion | Format QR définitif (152 caractères, QR version 8, 49 × 49 modules) ; liste fictive ; « mauvaise porte » en tranche 11 |
-| 2 | Compte organisateur, mot de passe oublié | O1, E3 | non commencée | | |
+| 2 | Compte organisateur, mot de passe oublié | O1, E3 | terminée, en attente de PC-2 | `pnpm verify` (78 tests dont 19 d'intégration), essai réel (Mailpit), revue isolée de sécurité | Page après connexion provisoire ; PUT du profil en tranche 3 |
 | 3 | Événement, catégories, période de vente, aperçu des frais | O2, O3, O4 | non commencée | | |
 | 4 | Publication, page publique, recherche, annulation/report, signalement | B1, B2, O5 | non commencée | | |
 | 5 | Réservation | B3, B8 | non commencée | | |

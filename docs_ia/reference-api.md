@@ -10,6 +10,12 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | GET `/dev/scan-prototype/manifest` | public (développement seulement) | 1 | `scanManifestSchema` (`packages/shared/src/scan.ts`) : liste fictive | `scan-prototype/routes.test.ts` | Temporaire : remplacée par GET `/scan/manifest` (accès scan) en tranche 10 ; absente en production |
 | GET `/dev/scan-prototype/samples` | public (développement seulement) | 1 | 7 billets d'essai signés | idem | Temporaire (outil d'essai) |
 | POST `/dev/scan-prototype/tickets` | public (développement seulement) | 1 | Billet « vendu après le téléchargement » | idem | Temporaire (outil d'essai) |
+| POST `/auth/register` | public (limité : 10/h par IP) | 2 | `registerRequestSchema` (email, mot de passe ≥ 8, **displayName**) → 201 profil + cookie de session | `identity.test.ts` | `displayName` ajouté (décision Q2, journal de bord n° 63) ; email déjà pris → 400 `VALIDATION_ERROR` `details.reason = already_registered` |
+| POST `/auth/login` | public (limité : 10 par email, 30 par IP / 15 min) | 2 | `loginRequestSchema` → 200 profil + cookie ; 401 `UNAUTHENTICATED` identique pour email inconnu | idem | Organisateurs seulement jusqu'à la tranche 14 (`MFA_REQUIRED` des comptes internes non construit) |
+| POST `/auth/logout` | organisateur | 2 | → 204, session révoquée, cookie effacé | idem | — |
+| POST `/auth/password/forgot` | public (limité : 3 par email, 20 par IP / h) | 2 | `{email}` → 202 `{}` toujours ; recherche et envoi après la réponse | idem | — |
+| POST `/auth/password/reset` | public (limité : 20 par IP / h) | 2 | `{token, newPassword}` → 200 ; ferme toutes les sessions et les autres liens ; 400 `TOKEN_INVALID` | idem | — |
+| GET `/organizer/profile` | organisateur | 2 | `organizerProfileSchema` (email, displayName, description, contactPhone) | idem | PUT reporté en tranche 3 avec l'écran O2 (journal de bord n° 63) |
 | GET `/openapi.json` | public | 0 | Document OpenAPI généré depuis les schémas Zod (routes cachées exclues) | `apps/api/src/app.test.ts` | Ajout : le contrat (§6.1) demande la documentation générée sans fixer son adresse |
 
 ## Codes d'erreur implémentés
@@ -18,6 +24,8 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | `VALIDATION_ERROR` | 400, et autres 4xx levés par Fastify (413, 415…) | toutes |
 | `UNAUTHENTICATED` / `FORBIDDEN` / `RATE_LIMITED` | 401 / 403 / 429 (par correspondance de statut) | toutes |
 | `NOT_FOUND` | 404 | toute adresse inconnue |
+| `TOKEN_INVALID` | 400 | `/auth/password/reset` |
+| `FORBIDDEN` | 403 | toute modification d'une origine non autorisée (S2) |
 | `INTERNAL_ERROR` | 500 | toutes (message générique, détail seulement dans les journaux masqués) |
 
 Format : `{ "error": { "code", "message", "details" } }` (§6.1), schéma `errorResponseSchema` dans `packages/shared/src/errors.ts`.

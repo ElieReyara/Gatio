@@ -156,8 +156,16 @@ describe('isolation entre organisateurs', () => {
 });
 
 describe('mot de passe oublié (R36)', () => {
-  const forgot = (email: string) =>
-    call({ method: 'POST', url: '/api/v1/auth/password/forgot', payload: { email } });
+  // La recherche du compte et l'envoi se font après la réponse : on les attend.
+  const forgot = async (email: string) => {
+    const response = await call({
+      method: 'POST',
+      url: '/api/v1/auth/password/forgot',
+      payload: { email },
+    });
+    await deps.settle();
+    return response;
+  };
   const reset = (token: string, newPassword: string) =>
     call({ method: 'POST', url: '/api/v1/auth/password/reset', payload: { token, newPassword } });
 
@@ -202,7 +210,18 @@ describe('mot de passe oublié (R36)', () => {
     const responses = [];
     for (let i = 0; i < 4; i++) responses.push(await forgot(account.email));
     expect(responses.map((response) => response.statusCode)).toEqual([202, 202, 202, 202]);
+    expect(new Set(responses.map((response) => response.body)).size).toBe(1);
     expect(deps.emailOutbox.sent).toHaveLength(3);
+  });
+
+  it('ferme les autres liens du compte quand l’un d’eux a servi', async () => {
+    await register();
+    await forgot(account.email);
+    const first = resetToken();
+    await forgot(account.email);
+    const second = resetToken();
+    expect((await reset(second, 'nouveaumotdepasse')).statusCode).toBe(200);
+    expect(errorCode(await reset(first, 'encoreunautre'))).toBe('TOKEN_INVALID');
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatDateTime,
+  formatOpening,
   formatMoney,
   formatPercent,
   fromChadInput,
@@ -17,6 +18,10 @@ describe('formats du système de design', () => {
   it('écrit les dates en toutes lettres, à l’heure du Tchad', () => {
     expect(formatDateTime('2026-11-14T18:00:00.000Z')).toBe('Samedi 14 novembre, 19 h');
     expect(formatDateTime('2026-11-14T18:30:00.000Z')).toBe('Samedi 14 novembre, 19 h 30');
+  });
+
+  it('écrit l’ouverture d’une catégorie comme la maquette B2', () => {
+    expect(formatOpening('2026-11-14T07:00:00.000Z')).toBe('samedi 14 novembre à 8 h');
   });
 
   it('convertit la saisie (heure du Tchad) aller et retour', () => {

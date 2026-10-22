@@ -34,6 +34,12 @@ export function formatDateTime(iso: string): string {
   return `${weekday} ${parts.day} ${parts.month}, ${Number(parts.hour)} h${minutes}`;
 }
 
+// « samedi 14 novembre à 8 h » (maquette B2 : ouverture d'une catégorie).
+export function formatOpening(iso: string): string {
+  const text = formatDateTime(iso).replace(', ', ' à ');
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
 // Champ « datetime-local » : la saisie est l'heure du Tchad, quel que soit le réglage du téléphone.
 export function toChadInput(iso: string | null): string {
   if (!iso) return '';

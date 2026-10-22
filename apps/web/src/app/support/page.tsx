@@ -22,11 +22,14 @@ export default async function SupportPage({
   searchParams: Promise<{ evenement?: string }>;
 }) {
   const { evenement } = await searchParams;
+  // Le support doit rester joignable même si l'API ne répond pas : page générale.
   const event =
     evenement && /^[a-z0-9]{4,32}$/.test(evenement)
-      ? await getPublic(`/events/${evenement}`, publicEventSchema)
+      ? await getPublic(`/events/${evenement}`, publicEventSchema).catch(() => null)
       : null;
   const { whatsapp, email } = supportContacts();
+  if (!whatsapp && !email)
+    console.warn('Page de support : SUPPORT_WHATSAPP et SUPPORT_EMAIL vides');
   const eventUrl = event ? `${siteUrl()}/e/${event.slug}` : null;
   const message = event && eventUrl ? t.message(event.title, eventUrl) : '';
 

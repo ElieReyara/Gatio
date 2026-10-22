@@ -1,6 +1,7 @@
 import { cities, eventTypes, publicEventListSchema } from '@gatio/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
 import { EventImage } from '@/components/public/EventImage';
 import { PublicHeader } from '@/components/public/PublicHeader';
@@ -13,7 +14,7 @@ const t = texts.public;
 export const metadata: Metadata = { title: `${texts.app.name} · ${t.listTitle}` };
 export const dynamic = 'force-dynamic';
 
-type Search = { ville?: string; quand?: string; type?: string };
+type Search = { ville?: string; quand?: string; type?: string; apres?: string };
 
 // Liste et recherche des événements (maquette B1) : ville, date, type. Formulaire sans
 // JavaScript (méthode GET) : la page reste légère et fonctionne sur tout téléphone.
@@ -26,7 +27,10 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
   if (city) query.set('city', city);
   if (type) query.set('type', type);
   if (thisWeek) query.set('to', new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString());
-  const result = await getPublic(`/events?${query}`, publicEventListSchema);
+  if (search.apres && /^[A-Za-z0-9_-]{1,200}$/.test(search.apres))
+    query.set('cursor', search.apres);
+  // API indisponible : la page s'affiche quand même, avec un message.
+  const result = await getPublic(`/events?${query}`, publicEventListSchema).catch(() => undefined);
   const items = result?.items ?? [];
 
   const typeHref = (value?: string) => {
@@ -36,6 +40,14 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
     if (value) params.set('type', value);
     const text = params.toString();
     return text ? `/?${text}` : '/';
+  };
+  const moreHref = () => {
+    const params = new URLSearchParams();
+    if (city) params.set('ville', city);
+    if (thisWeek) params.set('quand', 'semaine');
+    if (type) params.set('type', type);
+    if (result?.nextCursor) params.set('apres', result.nextCursor);
+    return `/?${params}`;
   };
 
   return (
@@ -79,7 +91,8 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
             </Link>
           ))}
         </nav>
-        {items.length === 0 ? (
+        {result === undefined && <Banner kind="error">{t.unavailable}</Banner>}
+        {result !== undefined && items.length === 0 ? (
           <div className="empty">
             <span className="empty-icon">
               <Icon name="ticket" size={40} />
@@ -106,6 +119,11 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
               </span>
             </Link>
           ))
+        )}
+        {result?.nextCursor && (
+          <Link className="button-secondary button-link" href={moreHref()}>
+            {t.more}
+          </Link>
         )}
       </main>
     </>

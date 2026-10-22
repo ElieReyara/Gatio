@@ -41,6 +41,8 @@ export function PublicationPanel({
     setConfirm(null);
     if (!result.ok) {
       setFailure(errorText(result));
+      // Statut changé ailleurs (autre onglet) : on affiche l'état réel.
+      if (isOutdated(result)) router.refresh();
       return;
     }
     setNotice(after ?? null);
@@ -52,6 +54,11 @@ export function PublicationPanel({
     const startsAt = fromChadInput(String(formData.get('startsAt') ?? ''));
     if (!startsAt || new Date(startsAt).getTime() <= Date.now()) {
       setDateError(texts.space.eventForm.startsAtPast);
+      return;
+    }
+    // Republier « avec une nouvelle date » (R34) : la date doit changer.
+    if (new Date(startsAt).getTime() === new Date(event.startsAt).getTime()) {
+      setDateError(t.sameDate);
       return;
     }
     setDateError(null);
@@ -86,7 +93,8 @@ export function PublicationPanel({
       )}
       {notice === 'republished' && (
         <Banner kind="success">
-          <strong>{t.republishedStrong}</strong> {t.republished(formatDateTime(event.startsAt))}
+          <strong>{t.republishedStrong}</strong> {t.republished(formatDateTime(event.startsAt))}{' '}
+          {t.linkUnchanged}
         </Banner>
       )}
       {notice === 'unpublished' && <Banner kind="info">{t.unpublished}</Banner>}
@@ -183,6 +191,7 @@ export function PublicationPanel({
             <button
               type="button"
               className="button-secondary"
+              disabled={busy}
               onClick={() => setConfirm('postpone')}
             >
               {t.postpone}
@@ -190,6 +199,7 @@ export function PublicationPanel({
             <button
               type="button"
               className="button-secondary button-danger-outline"
+              disabled={busy}
               onClick={() => setConfirm('cancel')}
             >
               {t.cancel}
@@ -201,6 +211,7 @@ export function PublicationPanel({
         <button
           type="button"
           className="button-secondary button-danger-outline"
+          disabled={busy}
           onClick={() => setConfirm('cancel')}
         >
           {t.cancelEvent}
@@ -257,8 +268,14 @@ export function PublicationPanel({
   );
 }
 
+function isOutdated(result: Extract<ApiResult<unknown>, { ok: false }>): boolean {
+  const reason = result.error?.details.reason;
+  return reason === 'invalid_status' || reason === 'event_cancelled';
+}
+
 function errorText(result: Extract<ApiResult<unknown>, { ok: false }>): string {
   const details = result.error?.details ?? {};
+  if (isOutdated(result)) return t.outdated;
   if (details.reason === 'payout_account_missing') return t.payoutMissing;
   if (details.reason === 'not_in_future') return texts.space.eventForm.startsAtPast;
   if (details.reason === 'sale_period_conflict') {

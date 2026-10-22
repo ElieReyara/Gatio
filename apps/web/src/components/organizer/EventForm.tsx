@@ -104,6 +104,8 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
       if (reason === 'not_in_future') setErrors({ startsAt: t.startsAtPast });
       else if (reason === 'below_categories') {
         setErrors({ capacity: t.capacityBelow(Number(result.error?.details.allocated ?? 0)) });
+      } else if (reason === 'postpone_required') {
+        setErrors({ startsAt: t.postponeRequired });
       } else if (reason === 'sale_period_conflict') {
         const names = (result.error?.details.categories as string[] | undefined) ?? [];
         setErrors({ startsAt: t.periodConflict(names.join(', ')) });

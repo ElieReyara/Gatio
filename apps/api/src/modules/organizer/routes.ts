@@ -197,7 +197,23 @@ export const organizerRoutes =
         const updated = await db.transaction(async (tx) => {
           const event = await ownedEvent(tx, me(request).organizerId, request.params.id, true);
           assertNotCancelled(event);
-          if (body.startsAt && new Date(body.startsAt).getTime() !== event.startsAt.getTime()) {
+          const dateChanged =
+            body.startsAt !== undefined &&
+            new Date(body.startsAt).getTime() !== event.startsAt.getTime();
+          if (dateChanged && body.startsAt) {
+            // R34 : la date d'un événement en vente ne change que par un report (bandeau,
+            // ventes arrêtées, trace) ; en brouillon ou reporté, elle se modifie librement.
+            if (event.status === 'published') {
+              throw new AppError(
+                400,
+                'VALIDATION_ERROR',
+                'Reportez l’événement pour changer sa date.',
+                {
+                  field: 'startsAt',
+                  reason: 'postpone_required',
+                },
+              );
+            }
             assertFuture(body.startsAt);
             await assertCategoryPeriodsStillValid(tx, event.id, new Date(body.startsAt));
           }
@@ -230,6 +246,9 @@ export const organizerRoutes =
             })
             .where(eq(events.id, event.id))
             .returning();
+          if (dateChanged && event.status === 'postponed') {
+            await writeAudit(tx, auditEntry(request, 'event.reschedule', event, row!));
+          }
           return row!;
         });
         return eventDetail(db, updated);

@@ -41,7 +41,7 @@ export async function generateMetadata({
       siteName: texts.app.name,
       locale: 'fr_FR',
       type: 'website',
-      ...(image ? { images: [{ url: image, width: 1200 }] } : {}),
+      ...(image ? { images: [{ url: image }] } : {}),
     },
   };
 }

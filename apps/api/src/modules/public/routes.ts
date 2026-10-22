@@ -38,11 +38,14 @@ export const publicRoutes =
         const { city, type, from, to, q, limit } = request.query;
         const cursor = decodeCursor(request.query.cursor);
         const rows = await db
-          .select()
+          .select({ event: events })
           .from(events)
+          .innerJoin(organizers, eq(organizers.id, events.organizerId))
           .where(
             and(
               eq(events.status, 'published'),
+              // R33 : un organisateur suspendu disparaît du site avec ses événements.
+              eq(organizers.status, 'active'),
               gte(events.startsAt, sql`now()`),
               city ? eq(events.city, city) : undefined,
               type ? eq(events.eventType, type) : undefined,
@@ -62,8 +65,10 @@ export const publicRoutes =
                 : undefined,
             ),
           )
-          .orderBy(asc(events.startsAt), asc(events.id))
-          .limit(limit + 1);
+          // Tri sur la même valeur que le curseur (milliseconde) : aucun événement sauté.
+          .orderBy(asc(sql`date_trunc('milliseconds', ${events.startsAt})`), asc(events.id))
+          .limit(limit + 1)
+          .then((result) => result.map(({ event }) => event));
         const page = rows.slice(0, limit);
         const prices = await minPrices(
           db,
@@ -91,7 +96,11 @@ export const publicRoutes =
           .from(events)
           .innerJoin(organizers, eq(organizers.id, events.organizerId))
           .where(
-            and(eq(events.slug, request.params.slug), inArray(events.status, [...VISIBLE_BY_LINK])),
+            and(
+              eq(events.slug, request.params.slug),
+              inArray(events.status, [...VISIBLE_BY_LINK]),
+              eq(organizers.status, 'active'),
+            ),
           );
         if (!row) throw new AppError(404, 'NOT_FOUND', 'Événement introuvable.');
         const categories = await db
@@ -103,7 +112,7 @@ export const publicRoutes =
           .orderBy(asc(ticketCategories.position), asc(ticketCategories.createdAt));
         const now = new Date();
         const sellable = categories.filter(
-          (category) => categoryAvailability(category, row.event.startsAt, now) === 'available',
+          (category) => publicCategory(category, row.event, now).availability === 'available',
         );
         return {
           ...summary(row.event, minOf(sellable)),
@@ -124,7 +133,12 @@ function publicCategory(category: CategoryRow, event: EventRow, now: Date) {
     currency: category.currency,
     saleStartsAt: category.saleStartsAt?.toISOString() ?? null,
     saleEndsAt: effectiveSaleEnd(category, event.startsAt).toISOString(),
-    availability: categoryAvailability(category, event.startsAt, now),
+    // R12 : seul un événement publié vend. Reporté ou annulé : aucune catégorie n'est
+    // « disponible », quelle que soit sa période (l'écran affiche « Vente arrêtée »).
+    availability:
+      event.status === 'published'
+        ? categoryAvailability(category, event.startsAt, now)
+        : ('ended' as const),
   };
 }
 

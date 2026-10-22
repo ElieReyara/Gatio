@@ -157,6 +157,8 @@ export const texts = {
       imageUploading: 'Envoi de l’image…',
       imageNotSaved:
         'L’image n’a pas été enregistrée. Vous pouvez en choisir une autre dans l’onglet Infos.',
+      postponeRequired:
+        'Cet événement est en vente : pour changer sa date, reportez-le depuis sa page (le public en sera informé).',
       periodConflict: (names: string) =>
         `Avec cette date, la période de vente de ces catégories ne serait plus possible : ${names}. Modifiez-les d’abord.`,
       city: 'Ville',
@@ -311,6 +313,9 @@ export const texts = {
       cancelledText:
         'Les ventes sont arrêtées. Remboursez les acheteurs selon les conditions d’utilisation.',
       unpublished: 'Votre événement n’est plus visible du public.',
+      outdated:
+        'Ce changement n’est plus possible : l’événement a été modifié entre-temps. La page est mise à jour.',
+      sameDate: 'Choisissez une date différente de l’ancienne.',
     },
   },
   // Maquettes B1 et B2 (acheteur).
@@ -347,6 +352,8 @@ export const texts = {
     dateTbc: 'Date à confirmer',
     problem: 'Un problème avec cet événement ?',
     contactSupport: 'Contacter le support',
+    more: 'Voir plus d’événements',
+    unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
   },
   // Page de support (proposition validée à l'essai, journal de bord n° 66).
   support: {
@@ -360,8 +367,7 @@ export const texts = {
       'Pour un remboursement, contactez d’abord l’organisateur : c’est lui qui rembourse les billets.',
     backToEvent: 'Retour à l’événement',
     toEvents: 'Voir les événements',
-    notConfigured:
-      'Aucun moyen de contact n’est encore configuré (SUPPORT_WHATSAPP, SUPPORT_EMAIL).',
+    notConfigured: 'Le support n’est pas encore joignable en ligne. Réessayez plus tard.',
     message: (title: string, url: string) =>
       `Bonjour, j’ai un problème avec l’événement « ${title} » (${url}).`,
     subject: (title: string) => `Événement « ${title} »`,

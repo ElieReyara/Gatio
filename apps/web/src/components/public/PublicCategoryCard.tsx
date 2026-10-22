@@ -1,5 +1,5 @@
 import type { PublicCategory } from '@gatio/shared';
-import { formatDateTime, formatMoney } from '@/lib/format';
+import { formatMoney, formatOpening } from '@/lib/format';
 import { texts } from '@/texts/fr';
 
 const t = texts.public;
@@ -21,9 +21,7 @@ export function PublicCategoryCard({
         <div className="category-name">{category.name}</div>
         <div className="category-price">{formatMoney(category.priceAmount)}</div>
         {state === 'upcoming' && category.saleStartsAt && (
-          <div className="category-note">
-            {t.opensOn(formatDateTime(category.saleStartsAt).replace(/^./, (c) => c.toLowerCase()))}
-          </div>
+          <div className="category-note">{t.opensOn(formatOpening(category.saleStartsAt))}</div>
         )}
       </div>
       <span className={`tag tag--${state}`}>{t.availability[state]}</span>

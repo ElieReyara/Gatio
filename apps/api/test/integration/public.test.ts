@@ -208,7 +208,11 @@ describe('report et annulation (R34)', () => {
       'available',
     );
     const { rows } = await pool.query('select action from audit_log order by created_at');
-    expect(rows.map((row) => row.action)).toEqual(['event.postpone', 'event.republish']);
+    expect(rows.map((row) => row.action)).toEqual([
+      'event.postpone',
+      'event.reschedule',
+      'event.republish',
+    ]);
   });
 
   it('annulé : définitif, hors de la liste, page avec son statut, plus rien de modifiable', async () => {
@@ -245,6 +249,61 @@ describe('report et annulation (R34)', () => {
     const { id } = await draft();
     const bob = await account('bob@exemple.com');
     expect(errorOf(await action(id, 'publish', bob)).code).toBe('NOT_FOUND');
+  });
+});
+
+describe('règles ajoutées après la revue de la tranche 4', () => {
+  it('un événement reporté ne montre aucune catégorie disponible ni prix « à partir de » (R12)', async () => {
+    const { id, slug } = await draft();
+    await action(id, 'publish');
+    await action(id, 'postpone');
+    const event = publicEventSchema.parse((await page(slug)).json());
+    expect(event.categories.map((category) => category.availability)).toEqual(['ended']);
+    expect(event.minPriceAmount).toBeNull();
+  });
+
+  it('les événements d’un organisateur suspendu disparaissent (R33)', async () => {
+    const { id, slug } = await draft();
+    await action(id, 'publish');
+    await pool.query("update organizers set status = 'suspended'");
+    expect((await page(slug)).statusCode).toBe(404);
+    expect((await list()).items).toHaveLength(0);
+  });
+
+  it('la date d’un événement publié ne change que par un report (R34)', async () => {
+    const { id } = await draft();
+    await action(id, 'publish');
+    const response = await call({
+      method: 'PATCH',
+      url: `/api/v1/organizer/events/${id}`,
+      cookie: alice,
+      payload: { startsAt: days(45).toISOString() },
+    });
+    expect(errorOf(response).details).toMatchObject({ reason: 'postpone_required' });
+    const title = await call({
+      method: 'PATCH',
+      url: `/api/v1/organizer/events/${id}`,
+      cookie: alice,
+      payload: { title: 'Nouveau titre' },
+    });
+    expect(title.statusCode).toBe(200);
+  });
+
+  it('le journal d’audit garde l’acteur, l’adresse et les dates avant et après', async () => {
+    const { id } = await draft();
+    await action(id, 'publish');
+    await action(id, 'postpone');
+    const newDate = days(50).toISOString();
+    await call({
+      method: 'PATCH',
+      url: `/api/v1/organizer/events/${id}`,
+      cookie: alice,
+      payload: { startsAt: newDate },
+    });
+    const { rows } = await pool.query(
+      "select a.actor_user_id = u.id as by_alice, a.ip, a.after->>'startsAt' as after from audit_log a join users u on u.email = 'alice@exemple.com' where a.action = 'event.reschedule'",
+    );
+    expect(rows).toEqual([{ by_alice: true, ip: '127.0.0.1', after: newDate }]);
   });
 });
 

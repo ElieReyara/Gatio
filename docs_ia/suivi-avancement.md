@@ -15,7 +15,7 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | 1 | Prototype QR signé et scan hors ligne | Haute | 0 | Scan en mode avion sur iPhone et Android réels, QR ajouté après téléchargement accepté, densité lisible | PC-1 | en attente de contrôle (Android réussi le 22/10/2026 ; iPhone à faire) |
 | 2 | Compte organisateur et mot de passe oublié | Haute | 0 | Inscription, connexion, réinitialisation ; isolation testée ; réponse identique email inconnu | PC-2 ✔ | terminé (22/10/2026) |
 | 3 | Événement, catégories, période de vente, aperçu des frais | Haute | 2 | 4 lignes du tableau des frais testées ; prix trop bas refusé ; règles de période testées | PC-3 ✔ | terminé (22/10/2026) |
-| 4 | Publication, page publique, recherche, annulation/report, signalement | Haute | 3 | Aperçu de partage ; poids mesuré ; bandeaux ; republication ; lien support pré-rempli | PC-4 | à faire |
+| 4 | Publication, page publique, recherche, annulation/report, signalement | Haute | 3 | Aperçu de partage ; poids mesuré ; bandeaux ; republication ; lien support pré-rempli | PC-4 | en attente de contrôle (PC-4) |
 | 5 | Réserver des billets | Haute | 4 | 100 achats simultanés → 1 gagnant ; expiration ; idempotence ; période ; double saisie ; annulation concurrente | PC-5 | à faire |
 | 6 | Payer et recevoir le billet (faux prestataire) | Haute | 5, 1 | Cas R13–R18 testés ; aucun billet avant confirmation | PC-6 | à faire |
 | 7 | Billet téléchargeable et email | Haute | 6 | PDF scannable ; email dans Mailpit ; email rattaché après validation | PC-7 | à faire |

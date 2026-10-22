@@ -9,7 +9,7 @@ Une ligne par fonctionnalité du plan unifié. États : non commencée · partie
 | 1 | QR signé et scan hors ligne (prototype) | C2 | réussie sur Android ; iPhone à essayer (PC-1) | `pnpm verify` (49 tests), revue isolée, essai du responsable sur Android en mode avion | Format QR définitif (152 caractères, QR version 8, 49 × 49 modules) ; liste fictive ; « mauvaise porte » en tranche 11 |
 | 2 | Compte organisateur, mot de passe oublié | O1, E3 | terminée (PC-2 validé le 22/10/2026) | `pnpm verify` (78 tests dont 19 d'intégration), essai réel (Mailpit), revue isolée de sécurité | Page après connexion provisoire ; PUT du profil en tranche 3 |
 | 3 | Événement, catégories, période de vente, aperçu des frais | O2, O3, O4 (+ écrans complétés) | terminée (PC-3 validé le 22/10/2026) | `pnpm verify` (126 tests dont 45 d'intégration), essai réel des pages, aperçu en direct testé dans Edge, revue isolée | Écrans sans maquette à valider à l'écran |
-| 4 | Publication, page publique, recherche, annulation/report, signalement | B1, B2, O5 | non commencée | | |
+| 4 | Publication, page publique, recherche, annulation/report, signalement | B1, B2, O5, report et support (proposés) | terminée, en attente de PC-4 | `pnpm verify` (144 tests dont 59 d'intégration), essai réel du parcours complet, revue isolée | Aperçu WhatsApp à essayer en réel ; numéro et email du support à fournir |
 | 5 | Réservation | B3, B8 | non commencée | | |
 | 6 | Paiement (faux prestataire) et billet | B4, B5 | non commencée | | |
 | 7 | Billet PDF et email | P1, E1, E2, B9 | non commencée | | |

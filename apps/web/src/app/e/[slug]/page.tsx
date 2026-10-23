@@ -8,6 +8,7 @@ import { Icon } from '@/components/Icon';
 import { EventImage } from '@/components/public/EventImage';
 import { PublicCategoryCard } from '@/components/public/PublicCategoryCard';
 import { PublicHeader } from '@/components/public/PublicHeader';
+import { ShareLink } from '@/components/public/ShareLink';
 import { formatDateTime } from '@/lib/format';
 import { getPublic } from '@/lib/public-api';
 import { siteUrl } from '@/lib/site';
@@ -51,6 +52,7 @@ export async function generateMetadata({
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const event = await loadEvent((await params).slug);
   if (!event) notFound();
+  const url = `${await siteUrl()}/e/${event.slug}`;
   const cancelled = event.status === 'cancelled';
   const postponed = event.status === 'postponed';
   const stopped = cancelled || postponed;
@@ -106,6 +108,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             </p>
           </>
         )}
+        {!stopped && <ShareLink title={event.title} url={url} />}
       </main>
       <footer className="public-footer">
         <span className="fine-print fine-print--left">{t.problem}</span>

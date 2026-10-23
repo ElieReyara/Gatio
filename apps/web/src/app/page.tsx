@@ -126,6 +126,12 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
           </Link>
         )}
       </main>
+      <footer className="public-footer">
+        <span className="fine-print fine-print--left">{t.organizerPrompt}</span>
+        <Link className="link link--tight" href="/organisateur">
+          {t.organizerLink}
+        </Link>
+      </footer>
     </>
   );
 }

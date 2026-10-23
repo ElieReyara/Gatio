@@ -357,6 +357,15 @@ export const texts = {
     problem: 'Un problème avec cet événement ?',
     contactSupport: 'Contacter le support',
     more: 'Voir plus d’événements',
+    // Ajouts demandés par le responsable le 23/10/2026 (aucune maquette) : partage du lien
+    // depuis la page d'un événement, accès à l'espace organisateur depuis l'accueil.
+    shareTitle: 'Partager cet événement',
+    share: 'Partager sur WhatsApp',
+    copy: 'Copier le lien',
+    copied: 'Lien copié',
+    shareText: (title: string, url: string) => `${title} : vos billets sur Gatio ${url}`,
+    organizerPrompt: 'Vous organisez un événement ?',
+    organizerLink: 'Espace organisateur',
     unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
   },
   // Page de support (proposition validée à l'essai, journal de bord n° 66).

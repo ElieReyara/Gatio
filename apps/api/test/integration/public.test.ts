@@ -307,6 +307,76 @@ describe('règles ajoutées après la revue de la tranche 4', () => {
   });
 });
 
+describe('décisions du responsable (PC-4)', () => {
+  it('refuse de publier sans catégorie active', async () => {
+    const response = await call({
+      method: 'POST',
+      url: '/api/v1/organizer/events',
+      cookie: alice,
+      payload: {
+        title: 'Sans billets',
+        description: 'x',
+        eventType: 'other',
+        city: 'Sarh',
+        venue: 'Salle',
+        startsAt: days(10).toISOString(),
+        capacity: 10,
+      },
+    });
+    const { id } = response.json() as { id: string };
+    expect(errorOf(await action(id, 'publish')).details).toMatchObject({
+      reason: 'no_active_category',
+    });
+  });
+
+  it('remet en vente une catégorie archivée, si la capacité le permet', async () => {
+    const { id, slug } = await draft({ capacity: 150 });
+    const archived = (
+      await call({
+        method: 'POST',
+        url: `/api/v1/organizer/events/${id}/categories`,
+        cookie: alice,
+        payload: { name: 'VIP', priceAmount: 20_000, quantityTotal: 50 },
+      })
+    ).json() as { id: string };
+    await call({
+      method: 'DELETE',
+      url: `/api/v1/organizer/categories/${archived.id}`,
+      cookie: alice,
+    });
+    // La place libérée est reprise par une autre catégorie : plus de capacité pour la VIP.
+    await call({
+      method: 'POST',
+      url: `/api/v1/organizer/events/${id}/categories`,
+      cookie: alice,
+      payload: { name: 'Tribune', priceAmount: 4_000, quantityTotal: 30 },
+    });
+    const refused = await call({
+      method: 'POST',
+      url: `/api/v1/organizer/categories/${archived.id}/restore`,
+      cookie: alice,
+    });
+    expect(errorOf(refused).details).toMatchObject({ reason: 'capacity_exceeded', remaining: 20 });
+    await call({
+      method: 'PATCH',
+      url: `/api/v1/organizer/events/${id}`,
+      cookie: alice,
+      payload: { capacity: 180 },
+    });
+    const restored = await call({
+      method: 'POST',
+      url: `/api/v1/organizer/categories/${archived.id}/restore`,
+      cookie: alice,
+    });
+    expect(restored.json()).toMatchObject({ name: 'VIP', archivedAt: null });
+    await action(id, 'publish');
+    const names = publicEventSchema
+      .parse((await page(slug)).json())
+      .categories.map((category) => category.name);
+    expect(names).toContain('VIP');
+  });
+});
+
 describe('liste et recherche (B1)', () => {
   it('filtre par ville, type, dates et texte ; trie par date ; exclut les événements passés', async () => {
     const a = await draft({

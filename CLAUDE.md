@@ -291,6 +291,9 @@ Bon à savoir (test à froid du 21/10/2026) :
   sert à vérifier le tout.
 - `pnpm verify` demande les services lancés (`pnpm services`) pour les tests
   d'intégration ; durée environ 1 min 30 sur un clone propre.
+- Après toute modification de `.env` ou un nouveau build, relancer les serveurs : ils ne
+  relisent rien en cours de route. Ne pas lancer `pnpm verify` (qui reconstruit le site)
+  pendant un essai du responsable sur `pnpm start:web`.
 - Port déjà pris : API par `API_PORT` dans `.env` ; base et Mailpit dans
   `docker-compose.yml`. En développement l'API n'écoute que sur `127.0.0.1`.
 

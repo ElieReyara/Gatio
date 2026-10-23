@@ -30,7 +30,7 @@ export default async function SupportPage({
   const { whatsapp, email } = supportContacts();
   if (!whatsapp && !email)
     console.warn('Page de support : SUPPORT_WHATSAPP et SUPPORT_EMAIL vides');
-  const eventUrl = event ? `${siteUrl()}/e/${event.slug}` : null;
+  const eventUrl = event ? `${await siteUrl()}/e/${event.slug}` : null;
   const message = event && eventUrl ? t.message(event.title, eventUrl) : '';
 
   return (

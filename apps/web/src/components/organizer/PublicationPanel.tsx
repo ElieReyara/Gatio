@@ -32,6 +32,7 @@ export function PublicationPanel({
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const sold = event.categories.reduce((total, category) => total + category.quantitySold, 0);
+  const hasCategory = event.categories.some((category) => category.archivedAt === null);
 
   async function act(action: Action, after?: Notice) {
     setBusy(true);
@@ -126,6 +127,14 @@ export function PublicationPanel({
       {status === 'draft' && (
         <>
           <p className="lead muted">{t.draftHint}</p>
+          {!hasCategory && (
+            <Banner kind="info">
+              {t.noCategory}{' '}
+              <Link href={`/organisateur/evenements/${event.id}/billets/nouvelle`}>
+                {texts.space.categories.add}
+              </Link>
+            </Banner>
+          )}
           {!hasPayoutAccount && (
             <Banner kind="info">
               {t.payoutMissing} <Link href="/organisateur/profil/versement">{t.toProfile}</Link>
@@ -134,7 +143,7 @@ export function PublicationPanel({
           <button
             type="button"
             className="button-primary"
-            disabled={busy || !hasPayoutAccount}
+            disabled={busy || !hasPayoutAccount || !hasCategory}
             onClick={() => void act('publish', 'published')}
           >
             {t.publish}
@@ -277,6 +286,7 @@ function errorText(result: Extract<ApiResult<unknown>, { ok: false }>): string {
   const details = result.error?.details ?? {};
   if (isOutdated(result)) return t.outdated;
   if (details.reason === 'payout_account_missing') return t.payoutMissing;
+  if (details.reason === 'no_active_category') return t.noCategory;
   if (details.reason === 'not_in_future') return texts.space.eventForm.startsAtPast;
   if (details.reason === 'sale_period_conflict') {
     const names = (details.categories as string[] | undefined) ?? [];

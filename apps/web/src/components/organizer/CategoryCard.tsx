@@ -25,14 +25,28 @@ export function salePeriodText(category: Pick<Category, 'saleStartsAt' | 'saleEn
 export function CategoryCard({ eventId, category }: { eventId: string; category: Category }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const archived = category.archivedAt !== null;
 
   async function archive() {
     const result = await sendJson('DELETE', `/organizer/categories/${category.id}`);
     setConfirming(false);
     if (result.ok) router.refresh();
-    else setFailed(true);
+    else setFailure(texts.form.networkError);
+  }
+
+  async function restore() {
+    const result = await sendJson('POST', `/organizer/categories/${category.id}/restore`);
+    if (result.ok) {
+      router.refresh();
+      return;
+    }
+    const details = result.error?.details ?? {};
+    setFailure(
+      details.reason === 'capacity_exceeded'
+        ? t.restoreCapacity(Number(details.remaining ?? 0))
+        : texts.form.networkError,
+    );
   }
 
   return (
@@ -44,7 +58,12 @@ export function CategoryCard({ eventId, category }: { eventId: string; category:
       <span className="muted">
         {t.tickets(category.quantityTotal)} · {salePeriodText(category)}
       </span>
-      {failed && <Banner kind="error">{texts.form.networkError}</Banner>}
+      {failure && <Banner kind="error">{failure}</Banner>}
+      {archived && (
+        <button type="button" className="button-secondary" onClick={() => void restore()}>
+          {t.restore}
+        </button>
+      )}
       {!archived && (
         <div className="row">
           <Link

@@ -22,7 +22,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
       <PublicationPanel
         event={event}
         hasPayoutAccount={profile.payoutAccount !== null}
-        saleUrl={`${siteUrl()}/e/${event.slug}`}
+        saleUrl={`${await siteUrl()}/e/${event.slug}`}
       />
     </OrganizerShell>
   );

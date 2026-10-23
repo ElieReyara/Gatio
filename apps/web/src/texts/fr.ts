@@ -199,6 +199,9 @@ export const texts = {
       edit: 'Modifier',
       archive: 'Archiver',
       archived: 'Archivée',
+      restore: 'Remettre en vente',
+      restoreCapacity: (remaining: number) =>
+        `Pas assez de place dans la capacité de l’événement (il reste ${remaining} billet${remaining > 1 ? 's' : ''}). Augmentez la capacité dans l’onglet Infos.`,
       archiveTitle: 'Archiver cette catégorie ?',
       archiveText: 'Elle ne sera plus vendue. Les billets déjà vendus restent valables à l’entrée.',
       archiveConfirm: 'Oui, archiver la catégorie',
@@ -277,6 +280,7 @@ export const texts = {
       draftHint: 'Il n’est pas encore visible du public.',
       publish: 'Publier',
       payoutMissing: 'Ajoutez un moyen de versement dans votre profil avant de publier.',
+      noCategory: 'Ajoutez au moins une catégorie de billets avant de publier.',
       toProfile: 'Ajouter un moyen de versement',
       saleLink: 'Lien de vente',
       copy: 'Copier le lien',

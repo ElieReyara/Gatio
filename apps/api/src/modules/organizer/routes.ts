@@ -419,6 +419,22 @@ export const organizerRoutes =
             );
           }
           assertFuture(event.startsAt.toISOString());
+          // Décision du responsable (PC-4) : pas de page publique sans billet à vendre.
+          const [active] = await tx
+            .select({ id: ticketCategories.id })
+            .from(ticketCategories)
+            .where(and(eq(ticketCategories.eventId, event.id), isNull(ticketCategories.archivedAt)))
+            .limit(1);
+          if (!active) {
+            throw new AppError(
+              400,
+              'VALIDATION_ERROR',
+              'Ajoutez au moins une catégorie de billets.',
+              {
+                reason: 'no_active_category',
+              },
+            );
+          }
           const row = await changeStatus(tx, event, ['draft', 'postponed'], 'published');
           if (event.status === 'postponed') {
             await writeAudit(tx, auditEntry(request, 'event.republish', event, row));
@@ -458,6 +474,31 @@ export const organizerRoutes =
           const row = await changeStatus(tx, event, ['published', 'postponed'], 'cancelled');
           await writeAudit(tx, auditEntry(request, 'event.cancel', event, row));
           return eventDetail(tx, row);
+        }),
+    );
+
+    // Remettre en vente une catégorie archivée (décision du responsable, PC-4 ; route
+    // absente du contrat §6.4, signalée dans la référence d'API). La capacité est revérifiée.
+    app.post(
+      '/organizer/categories/:id/restore',
+      { schema: { params: idParams, response: { 200: categorySchema, ...errors } } },
+      async (request) =>
+        db.transaction(async (tx) => {
+          const { event, category } = await ownedCategory(
+            tx,
+            me(request).organizerId,
+            request.params.id,
+          );
+          if (!category.archivedAt) return serializeCategory(tx, event, category);
+          const allocated = await allocatedQuantity(tx, event.id);
+          const alreadyCounted = category.quantitySold + category.quantityReserved;
+          assertCapacity(event.capacity, allocated - alreadyCounted, category.quantityTotal);
+          const [row] = await tx
+            .update(ticketCategories)
+            .set({ archivedAt: null, updatedAt: sql`now()` })
+            .where(eq(ticketCategories.id, category.id))
+            .returning();
+          return serializeCategory(tx, event, row!);
         }),
     );
 

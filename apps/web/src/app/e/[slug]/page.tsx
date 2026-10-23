@@ -30,14 +30,15 @@ export async function generateMetadata({
   const event = await loadEvent((await params).slug);
   if (!event) return { title: texts.app.name };
   const description = event.description.slice(0, 160);
-  const image = event.imageUrl ? `${siteUrl()}${event.imageUrl}` : undefined;
+  const site = await siteUrl();
+  const image = event.imageUrl ? `${site}${event.imageUrl}` : undefined;
   return {
     title: `${event.title} · ${texts.app.name}`,
     description,
     openGraph: {
       title: event.title,
       description,
-      url: `${siteUrl()}/e/${event.slug}`,
+      url: `${site}/e/${event.slug}`,
       siteName: texts.app.name,
       locale: 'fr_FR',
       type: 'website',

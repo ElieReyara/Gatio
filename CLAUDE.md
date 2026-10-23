@@ -169,6 +169,9 @@ silence.
   publier). Ensuite : envoi de `dev` à chaque tranche clôturée, si le
   responsable l'a confirmé en PC-0b.
 - Ne jamais enregistrer de secret ni de fichier `.env` (voir `.gitignore`).
+- Avant chaque enregistrement, relire le contenu exact (`git diff --cached`) : aucune donnée
+  personnelle, aucun secret, aucune valeur réelle dans `.env.example` (ERR-011). Ne jamais
+  enregistrer à l'aveugle un fichier modifié par quelqu'un d'autre.
 
 ## 7. Journal de session
 Un fichier par jour dans `docs_ia/journal/AAAA-MM-JJ.md`, limité à 800 lignes

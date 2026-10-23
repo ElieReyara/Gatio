@@ -15,8 +15,8 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | 1 | Prototype QR signé et scan hors ligne | Haute | 0 | Scan en mode avion sur iPhone et Android réels, QR ajouté après téléchargement accepté, densité lisible | PC-1 | en attente de contrôle (Android réussi le 22/10/2026 ; iPhone à faire) |
 | 2 | Compte organisateur et mot de passe oublié | Haute | 0 | Inscription, connexion, réinitialisation ; isolation testée ; réponse identique email inconnu | PC-2 ✔ | terminé (22/10/2026) |
 | 3 | Événement, catégories, période de vente, aperçu des frais | Haute | 2 | 4 lignes du tableau des frais testées ; prix trop bas refusé ; règles de période testées | PC-3 ✔ | terminé (22/10/2026) |
-| 4 | Publication, page publique, recherche, annulation/report, signalement | Haute | 3 | Aperçu de partage ; poids mesuré ; bandeaux ; republication ; lien support pré-rempli | PC-4 | en attente de contrôle (PC-4) |
-| 5 | Réserver des billets | Haute | 4 | 100 achats simultanés → 1 gagnant ; expiration ; idempotence ; période ; double saisie ; annulation concurrente | PC-5 | à faire |
+| 4 | Publication, page publique, recherche, annulation/report, signalement | Haute | 3 | Aperçu de partage ; poids mesuré ; bandeaux ; republication ; lien support pré-rempli | PC-4 ✔ | terminé (23/10/2026) |
+| 5 | Réserver des billets | Haute | 4 | 100 achats simultanés → 1 gagnant ; expiration ; idempotence ; période ; double saisie ; annulation concurrente | PC-5 | en attente de contrôle (construite le 23/10/2026) |
 | 6 | Payer et recevoir le billet (faux prestataire) | Haute | 5, 1 | Cas R13–R18 testés ; aucun billet avant confirmation | PC-6 | à faire |
 | 7 | Billet téléchargeable et email | Haute | 6 | PDF scannable ; email dans Mailpit ; email rattaché après validation | PC-7 | à faire |
 | 8 | Reconnexion par SMS et « mes billets » | Moyenne | 7 | Billets retrouvés par code ; pas d'accès aux billets d'autrui ; réponse identique | PC-8 | à faire |
@@ -43,7 +43,7 @@ données personnelles · opération irréversible · envoi vers l'extérieur.
 | PC-1 | Tranche 1, fin | Scan sur vrais iPhone et Android, lisibilité du QR (sinon plan B) | Seul le responsable peut juger (essai physique) ; format QR difficile à changer ensuite |
 | PC-2 ✔ 22/10/2026 | Tranche 2, fin | Mots de passe, sessions, jetons de réinitialisation, isolation | Sécurité |
 | PC-3 ✔ 22/10/2026 | Tranche 3, fin | Calcul des frais, moyen de versement, écrans manquants | Paiement (argent) ; donnée sensible |
-| PC-4 | Tranche 4, fin | Aperçu WhatsApp/Facebook, pages publiques, bandeaux | Seul le responsable peut juger |
+| PC-4 ✔ 23/10/2026 | Tranche 4, fin | Aperçu WhatsApp/Facebook, pages publiques, bandeaux | Seul le responsable peut juger |
 | PC-5 | Tranche 5, fin | Collecte du téléphone, du nom, de l'email ; anti-survente | Données personnelles |
 | PC-6 | Tranche 6, fin | Cycle de paiement, transaction de confirmation | Paiement |
 | PC-7 | Tranche 7, fin | PDF imprimé en noir et blanc, emails | Seul le responsable peut juger ; données personnelles |

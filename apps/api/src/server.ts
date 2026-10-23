@@ -3,13 +3,14 @@ import { loadConfig } from './config.js';
 import { createDatabase } from './db/client.js';
 import { createJobQueue } from './jobs/boss.js';
 import { startMaintenance } from './jobs/maintenance.js';
+import { startReservationExpiry } from './modules/orders/expiry.js';
 import { jobEmailOutbox, startEmailWorker } from './modules/email/outbox.js';
 import { mailpitEmail } from './modules/email/port.js';
 import { diskStorage } from './modules/media/storage.js';
 import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
 
 const config = loadConfig();
-const { pool } = createDatabase(config.databaseUrl);
+const { pool, db } = createDatabase(config.databaseUrl);
 const jobs = createJobQueue(config.databaseUrl);
 const ticketSigner = createTicketSigner(
   config.ticketSigning.keyId,
@@ -36,6 +37,7 @@ await startEmailWorker(
   app.log,
 );
 await startMaintenance(jobs, pool);
+await startReservationExpiry(jobs, db);
 await app.listen({ port: config.port, host: config.host });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

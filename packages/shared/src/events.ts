@@ -32,7 +32,7 @@ export function normalizeChadPhone(input: string): string | null {
   return /^\d{8}$/.test(digits) ? `+235${digits}` : null;
 }
 
-const chadPhone = z.string().transform((value, context) => {
+export const chadPhone = z.string().transform((value, context) => {
   const phone = normalizeChadPhone(value);
   if (!phone) context.addIssue({ code: 'custom', message: 'invalid_chad_phone' });
   return phone ?? '';

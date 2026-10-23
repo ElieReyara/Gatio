@@ -7,6 +7,11 @@ export const limits = {
   passwordForgotPerEmail: { limit: 3, windowSeconds: 60 * 60 },
   passwordForgotPerIp: { limit: 20, windowSeconds: 60 * 60 },
   passwordResetPerIp: { limit: 20, windowSeconds: 60 * 60 },
+  // R10 : quotas par adresse IP (valeurs de départ).
+  orderPerIp: { limit: 20, windowSeconds: 15 * 60 },
+  funnelPerIp: { limit: 300, windowSeconds: 15 * 60 },
 } as const;
+
+export { MAX_PENDING_ORDERS_PER_PHONE } from '@gatio/shared';
 
 export type Limit = { limit: number; windowSeconds: number };

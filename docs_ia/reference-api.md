@@ -29,6 +29,9 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | POST `/organizer/categories/{id}/restore` | organisateur | 4 | Remet en vente une catégorie archivée ; capacité revérifiée (`capacity_exceeded`) | `public.test.ts` | **Ajout au contrat** (décision du responsable, PC-4) |
 | GET `/media/{clé}` | public | 3 | Image WebP, cache d'un an, `nosniff` | idem | Ajout : sert les images du stockage disque (S3 en production) |
 | GET `/organizer/profile` | organisateur | 2 | `organizerProfileSchema` (email, displayName, description, contactPhone) | idem | PUT reporté en tranche 3 avec l'écran O2 (journal de bord n° 63) |
+| POST `/orders` | public (limité : 20 / 15 min par IP ; 3 commandes en attente par numéro) | 5 | `orderCreateSchema` (`packages/shared/src/orders.ts`) ; en-tête **`Idempotency-Key` obligatoire** (8 à 100 caractères `A-Za-z0-9_-`) → 201 `orderCreatedSchema` ; même clé depuis la même adresse → 200, même commande, **nouveau** jeton ; refus `EVENT_NOT_ON_SALE`, `CATEGORY_NOT_ON_SALE` (`archived`, `not_open`, `ended`), `STOCK_INSUFFICIENT` (`remaining`), 429 `too_many_orders` / `too_many_pending`, 400 `idempotency_key_required` / `unknown_category` | `orders.test.ts` | Clé de rejeu rattachée à l'adresse du client (le contrat ne dit pas sa portée) |
+| GET `/orders/{id}` | commande (`X-Order-Token`) | 5 | `orderSchema` : statut, événement, lignes, total, `remainingSeconds` (0 hors attente) ; jeton faux ou commande inconnue → 404 identique | idem | Billets de la commande payée : tranche 7 ; session acheteur : tranche 8 |
+| POST `/funnel-events` | public (limité : 300 / 15 min par IP) | 5 | `funnelEventInputSchema` (`event_view`, `checkout_started`, slug, identifiant de session anonyme) → 202 `{}` toujours | idem | Seules les deux mesures du parcours prises en tranche 5 ; les autres (paiement…) viennent avec leurs tranches |
 | GET `/openapi.json` | public | 0 | Document OpenAPI généré depuis les schémas Zod (routes cachées exclues) | `apps/api/src/app.test.ts` | Ajout : le contrat (§6.1) demande la documentation générée sans fixer son adresse |
 
 ## Codes d'erreur implémentés
@@ -40,6 +43,9 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | `TOKEN_INVALID` | 400 | `/auth/password/reset` |
 | `PRICE_TOO_LOW` | 400 | création et modification de catégorie |
 | `FORBIDDEN` | 403 | toute modification d'une origine non autorisée (S2) |
+| `EVENT_NOT_ON_SALE` | 409 | POST `/orders` (événement non publié, reporté, annulé) |
+| `CATEGORY_NOT_ON_SALE` | 409 | POST `/orders` (`details.reason` : `archived`, `not_open`, `ended`) |
+| `STOCK_INSUFFICIENT` | 409 | POST `/orders` (`details.remaining`) |
 | `INTERNAL_ERROR` | 500 | toutes (message générique, détail seulement dans les journaux masqués) |
 
 Format : `{ "error": { "code", "message", "details" } }` (§6.1), schéma `errorResponseSchema` dans `packages/shared/src/errors.ts`.

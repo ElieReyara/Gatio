@@ -159,7 +159,7 @@ silence.
 
 ## 6. Suivi de version
 - Dépôt local créé le 19/10/2026. Dépôt distant `origin` :
-  https://github.com/ElieReyara/Gatio.git (**public** pour l'instant, privé plus tard).
+  https://github.com/ElieReyara/Gatio.git (passé en **privé** par le responsable le 23/10/2026).
 - Branche de travail : `dev`. Branche protégée : `main`, jamais touchée par
   l'agent (le responsable la crée et y fusionne).
 - Enregistrer le travail sur la branche de travail à chaque tranche clôturée,
@@ -188,7 +188,7 @@ Un fichier par jour dans `docs_ia/journal/AAAA-MM-JJ.md`, limité à 800 lignes
 
 Journal de bord (document de projet, ajout seul) :
 `docs_business/Gatio Project/Gatio-Conception/05-journal-conception.md`.
-Prochain numéro : **61**. Toute décision, tout problème ou changement de
+Prochain numéro : **71**. Toute décision, tout problème ou changement de
 direction qui engage le projet y est ajouté, dans une section ajoutée en fin
 de fichier « Entrées de l'implémentation » : tableau (N°, date, sujet,
 contexte et problème, décision ou solution, suite, statut Ouvert / Décidé /

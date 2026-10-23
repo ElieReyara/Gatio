@@ -368,6 +368,69 @@ export const texts = {
     organizerLink: 'Espace organisateur',
     unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
   },
+  // Choix des billets et coordonnées (maquette B3) et messages d'erreur (B8).
+  checkout: {
+    choose: 'Choisir mes billets',
+    title: 'Vos billets',
+    remove: 'Retirer un billet',
+    add: 'Ajouter un billet',
+    maxPerOrder: (max: number) => `${max} billets au maximum par commande.`,
+    remaining: (n: number) => (n <= 1 ? `Il reste ${n} billet` : `Il reste ${n} billets`),
+    contact: 'Vos coordonnées',
+    name: 'Votre nom',
+    namePlaceholder: 'Votre nom et prénom',
+    phone: 'Votre numéro de téléphone',
+    phoneHelp: 'Votre billet sera lié à ce numéro.',
+    // Double saisie du numéro (journal de bord n° 55, document 07) : absente de la maquette B3.
+    phoneConfirm: 'Confirmez votre numéro',
+    phoneConfirmHelp: 'Tapez-le une seconde fois, sans copier-coller.',
+    email: 'Votre email (facultatif)',
+    emailHelp: 'Pour recevoir aussi votre billet par email.',
+    line: (quantity: number, name: string) =>
+      `${quantity} ${quantity > 1 ? 'billets' : 'billet'} ${name}`,
+    pay: (amount: string) => `Réserver et payer · ${amount}`,
+    payEmpty: 'Choisissez au moins un billet',
+    holdNote: 'Vos billets sont réservés 15 minutes pendant le paiement.',
+    busy: 'Réservation en cours…',
+    busyNote: 'Ne fermez pas cette page.',
+    fieldsToFix: (n: number) =>
+      n > 1
+        ? `${['Deux', 'Trois', 'Quatre'][n - 2] ?? n} champs sont à corriger`
+        : 'Un champ est à corriger',
+    fieldsToFixEnd: 'avant de continuer.',
+    nameMissing: 'Indiquez votre nom.',
+    phoneInvalid: 'Seuls les numéros tchadiens (+235) sont acceptés pour le moment.',
+    phoneMismatch: 'Les deux numéros ne sont pas identiques.',
+    noPaste: 'Tapez le numéro à la main pour éviter une erreur recopiée.',
+    emailInvalid: 'Cette adresse email n’est pas valide.',
+    stock:
+      'Il ne reste pas assez de billets dans cette catégorie. Choisissez une quantité plus petite.',
+    notOpen: 'Cette catégorie n’est pas encore en vente.',
+    ended: 'La vente de cette catégorie est terminée.',
+    eventStopped: 'Les ventes de cet événement sont arrêtées.',
+    tooManyPending: (max: number) =>
+      `Vous avez déjà ${max} réservations en attente avec ce numéro. Payez-en une ou attendez la fin de leur réservation.`,
+    reservationExpired: 'Votre réservation précédente a expiré. Appuyez de nouveau pour réserver.',
+    tooManyOrders: 'Trop de réservations depuis cet appareil. Réessayez dans quelques minutes.',
+    unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
+  },
+  // Page de la commande : haut de la maquette B4 (le paiement arrive en tranche 6).
+  order: {
+    title: 'Paiement',
+    timer: 'Vos billets sont réservés encore',
+    reference: (reference: string) => `Référence de commande : ${reference}`,
+    paymentSoon:
+      'Le paiement Mobile Money arrive à l’étape suivante du projet. Votre réservation est enregistrée.',
+    expired: 'Votre réservation a expiré.',
+    expiredText: 'Les billets sont remis en vente. Vous pouvez recommencer.',
+    retry: 'Choisir à nouveau mes billets',
+    notFound: 'Commande introuvable',
+    notFoundText:
+      'Ouvrez cette page depuis le téléphone qui a fait la réservation, ou contactez le support avec votre référence.',
+    toEvents: 'Voir les événements',
+    loading: 'Chargement de votre commande…',
+    closed: 'Cette commande n’est plus en attente de paiement.',
+  },
   // Page de support (proposition validée à l'essai, journal de bord n° 66).
   support: {
     title: 'Contacter le support',

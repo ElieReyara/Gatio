@@ -76,7 +76,7 @@ const page = (slug: string) => app.inject({ url: `/api/v1/events/${slug}` });
 
 beforeEach(async () => {
   await pool.query(
-    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, fee_rules, audit_log cascade',
+    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, fee_rules, audit_log, buyers, orders, order_items, funnel_events cascade',
   );
   await pool.query(`insert into fee_rules (scope, scope_id, calc_type, params, currency, valid_from)
     values ('platform', null, 'percent_fixed', '{"percent_bps": 400, "fixed_amount": 100}', 'XAF', now() - interval '1 minute')`);

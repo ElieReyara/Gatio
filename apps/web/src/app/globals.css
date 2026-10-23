@@ -1014,3 +1014,87 @@ body {
   background: var(--bg);
   word-break: break-all;
 }
+
+/* Réservation (maquettes B3 et B4). */
+.public-back {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.qty {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.qty button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qty button:disabled {
+  border-color: var(--line);
+  background: var(--bg);
+  color: var(--control-border);
+  cursor: not-allowed;
+}
+
+.qty span {
+  min-width: 24px;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.category--error {
+  border: 2px solid var(--danger);
+}
+
+.category-note--error {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.recap-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.timer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--warning-tint);
+}
+
+.recap {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.recap-total {
+  margin-top: var(--space-2);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}

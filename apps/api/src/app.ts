@@ -20,6 +20,7 @@ import { identityRoutes } from './modules/identity/routes.js';
 import { mediaRoutes } from './modules/media/routes.js';
 import type { StoragePort } from './modules/media/storage.js';
 import { organizerRoutes } from './modules/organizer/routes.js';
+import { orderRoutes } from './modules/orders/routes.js';
 import { publicRoutes } from './modules/public/routes.js';
 import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
 import type { TicketSigner } from './modules/tickets/signing.js';
@@ -115,6 +116,7 @@ export async function buildApp({
       );
       await api.register(mediaRoutes(storage));
       await api.register(publicRoutes(db));
+      await api.register(orderRoutes(db));
       if (config.nodeEnv !== 'production') {
         await api.register(scanPrototypeRoutes(ticketSigner), { prefix: '/dev/scan-prototype' });
       }

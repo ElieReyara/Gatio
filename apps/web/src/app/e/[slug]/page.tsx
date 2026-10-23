@@ -6,6 +6,7 @@ import { cache } from 'react';
 import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
 import { EventImage } from '@/components/public/EventImage';
+import { FunnelBeacon } from '@/components/public/FunnelBeacon';
 import { PublicCategoryCard } from '@/components/public/PublicCategoryCard';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { ShareLink } from '@/components/public/ShareLink';
@@ -56,6 +57,8 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const cancelled = event.status === 'cancelled';
   const postponed = event.status === 'postponed';
   const stopped = cancelled || postponed;
+  const onSale =
+    !stopped && event.categories.some((category) => category.availability === 'available');
 
   return (
     <>
@@ -108,6 +111,11 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             </p>
           </>
         )}
+        {onSale && (
+          <Link className="button-primary button-link" href={`/e/${event.slug}/billets`}>
+            {texts.checkout.choose}
+          </Link>
+        )}
         {!stopped && <ShareLink title={event.title} url={url} />}
       </main>
       <footer className="public-footer">
@@ -116,6 +124,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           {t.contactSupport}
         </Link>
       </footer>
+      <FunnelBeacon type="event_view" eventSlug={event.slug} />
     </>
   );
 }

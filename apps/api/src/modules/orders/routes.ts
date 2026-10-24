@@ -1,20 +1,31 @@
 import {
   errorResponseSchema,
   funnelEventInputSchema,
+  nextActionSchema,
   orderCreatedSchema,
   orderCreateSchema,
   orderSchema,
   type Order,
+  type PaymentMethod,
 } from '@gatio/shared';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db } from '../../db/client.js';
-import { events, funnelEvents, orderItems, orders, ticketCategories } from '../../db/schema.js';
+import {
+  events,
+  funnelEvents,
+  orderItems,
+  orders,
+  payments,
+  ticketCategories,
+  tickets,
+} from '../../db/schema.js';
 import { AppError } from '../../lib/errors.js';
 import { limits } from '../../lib/limits.js';
 import { consumeLimit } from '../../lib/rate-limit.js';
 import { hashToken } from '../../lib/tokens.js';
+import type { TicketSigner } from '../tickets/signing.js';
 import { createOrder, replayOrder } from './reservation.js';
 
 const errors = {
@@ -26,7 +37,7 @@ const errors = {
 
 // Commande et réservation (contrat §6.2).
 export const orderRoutes =
-  (db: Db): FastifyPluginAsyncZod =>
+  (db: Db, signer: TicketSigner): FastifyPluginAsyncZod =>
   async (app) => {
     app.post(
       '/orders',
@@ -109,6 +120,25 @@ export const orderRoutes =
           .innerJoin(ticketCategories, eq(ticketCategories.id, orderItems.categoryId))
           .where(eq(orderItems.orderId, row.order.id))
           .orderBy(asc(ticketCategories.position));
+        const [payment] = await db
+          .select()
+          .from(payments)
+          .where(eq(payments.orderId, row.order.id))
+          .orderBy(desc(payments.createdAt))
+          .limit(1);
+        const parsedNext = nextActionSchema.safeParse(payment?.nextAction);
+        // R23 : billets seulement pour une commande payée ; QR signé à la lecture (la
+        // signature Ed25519 est déterministe, rien n'est stocké).
+        const issued =
+          row.order.status === 'paid'
+            ? await db
+                .select({ ticket: tickets, categoryName: ticketCategories.name })
+                .from(tickets)
+                .innerJoin(ticketCategories, eq(ticketCategories.id, tickets.categoryId))
+                .innerJoin(orderItems, eq(orderItems.id, tickets.orderItemId))
+                .where(eq(tickets.orderId, row.order.id))
+                .orderBy(asc(ticketCategories.position), asc(orderItems.id), asc(tickets.ordinal))
+            : [];
         return {
           id: row.order.id,
           reference: row.order.reference,
@@ -130,6 +160,24 @@ export const orderRoutes =
           currency: row.order.currency,
           reservationExpiresAt: row.order.reservationExpiresAt.toISOString(),
           remainingSeconds: row.order.status === 'pending' ? row.remaining : 0,
+          payment: payment
+            ? {
+                method: payment.method as PaymentMethod,
+                status: payment.status,
+                failureReason: payment.failureReason,
+                next: payment.status === 'pending' && parsedNext.success ? parsedNext.data : null,
+              }
+            : null,
+          tickets: issued.map(({ ticket, categoryName }) => ({
+            id: ticket.id,
+            categoryName,
+            status: ticket.status,
+            qr: signer.signTicket({
+              ticketId: ticket.id,
+              eventId: ticket.eventId,
+              categoryId: ticket.categoryId,
+            }),
+          })),
         };
       },
     );
@@ -149,10 +197,19 @@ export const orderRoutes =
                 inArray(events.status, ['published', 'postponed', 'cancelled']),
               ),
             );
+          // Commande gardée seulement si elle est bien de cet événement.
+          const [order] =
+            event && request.body.orderId
+              ? await db
+                  .select({ id: orders.id })
+                  .from(orders)
+                  .where(and(eq(orders.id, request.body.orderId), eq(orders.eventId, event.id)))
+              : [];
           if (event) {
             await db.insert(funnelEvents).values({
               anonSessionId: request.body.anonSessionId,
               eventId: event.id,
+              orderId: order?.id ?? null,
               type: request.body.type,
             });
           }

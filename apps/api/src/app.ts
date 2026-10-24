@@ -21,6 +21,11 @@ import { mediaRoutes } from './modules/media/routes.js';
 import type { StoragePort } from './modules/media/storage.js';
 import { organizerRoutes } from './modules/organizer/routes.js';
 import { orderRoutes } from './modules/orders/routes.js';
+import { processNotification } from './modules/payments/confirmation.js';
+import { fakePaymentDevRoutes } from './modules/payments/dev-routes.js';
+import type { FakePaymentProvider } from './modules/payments/fake-provider.js';
+import type { PaymentPort } from './modules/payments/port.js';
+import { paymentRoutes, paymentWebhookRoutes } from './modules/payments/routes.js';
 import { publicRoutes } from './modules/public/routes.js';
 import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
 import type { TicketSigner } from './modules/tickets/signing.js';
@@ -31,6 +36,10 @@ export type AppDependencies = {
   ticketSigner: TicketSigner;
   emailOutbox: EmailOutbox;
   storage: StoragePort;
+  payments: PaymentPort;
+  // Traitement d'une notification de paiement enregistrée : file pg-boss en service,
+  // directement (après la réponse) dans les tests.
+  notificationReceived?: (notificationId: string) => Promise<void>;
   runInBackground?: (task: () => Promise<void>) => void;
 };
 
@@ -42,9 +51,18 @@ export async function buildApp({
   ticketSigner,
   emailOutbox,
   storage,
+  payments,
+  notificationReceived,
   runInBackground,
 }: AppDependencies) {
   const db = drizzle({ client: pool, schema });
+  const onNotification =
+    notificationReceived ??
+    (async (id: string) => {
+      const task = () => processNotification(db, payments, id);
+      if (runInBackground) runInBackground(task);
+      else await task();
+    });
   const app = Fastify({
     // Le site relaie /api/v1 depuis la même machine : l'adresse du client vient alors
     // de X-Forwarded-For, crue seulement si la requête arrive de 127.0.0.1 (limites par IP).
@@ -116,9 +134,27 @@ export async function buildApp({
       );
       await api.register(mediaRoutes(storage));
       await api.register(publicRoutes(db));
-      await api.register(orderRoutes(db));
+      await api.register(orderRoutes(db, ticketSigner));
+      await api.register(paymentRoutes(db, payments));
+      await api.register(paymentWebhookRoutes(db, payments, onNotification));
       if (config.nodeEnv !== 'production') {
         await api.register(scanPrototypeRoutes(ticketSigner), { prefix: '/dev/scan-prototype' });
+        if (isFake(payments)) {
+          await api.register(
+            fakePaymentDevRoutes(payments, async (notification) => {
+              const response = await app.inject({
+                method: 'POST',
+                url: `/api/v1/webhooks/payments/${payments.name}`,
+                payload: notification.rawBody,
+                headers: notification.headers,
+              });
+              if (response.statusCode !== 200) {
+                throw new Error(`fake notification refused: ${response.statusCode}`);
+              }
+            }),
+            { prefix: '/dev/fake-payments' },
+          );
+        }
       }
       api.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger());
     },
@@ -126,6 +162,10 @@ export async function buildApp({
   );
 
   return app;
+}
+
+function isFake(port: PaymentPort): port is FakePaymentProvider {
+  return 'simulate' in port;
 }
 
 // Erreurs levées par Fastify ou ses extensions (corps trop gros, type de contenu…) :

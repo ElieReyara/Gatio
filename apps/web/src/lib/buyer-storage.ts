@@ -40,11 +40,14 @@ function anonSessionId(): string {
   return created;
 }
 
-export function trackFunnel(type: 'event_view' | 'checkout_started', eventSlug: string) {
+// « payment_confirmed » est écrit par le serveur au moment de la confirmation.
+type FunnelType = 'event_view' | 'checkout_started' | 'payment_initiated';
+
+export function trackFunnel(type: FunnelType, eventSlug: string, orderId?: string) {
   void fetch('/api/v1/funnel-events', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ type, eventSlug, anonSessionId: anonSessionId() }),
+    body: JSON.stringify({ type, eventSlug, anonSessionId: anonSessionId(), orderId }),
     keepalive: true,
   }).catch(() => undefined);
 }

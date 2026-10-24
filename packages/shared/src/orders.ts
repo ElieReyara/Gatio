@@ -70,6 +70,28 @@ export const orderStatuses = [
   'refunded',
 ] as const;
 
+// Paiement (contrat §6.2, port Paiement §3.11). Les deux opérateurs de la maquette B4.
+export const paymentMethods = ['airtel_money', 'moov_money'] as const;
+export type PaymentMethod = (typeof paymentMethods)[number];
+
+export const paymentStartSchema = z.object({ method: z.enum(paymentMethods) });
+
+// Prochaine action rendue par le prestataire : le web n'a pas à le connaître.
+export const nextActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('redirect'), url: z.url({ protocol: /^https$/ }) }),
+  z.object({ type: z.literal('await_phone'), hint: z.string() }),
+]);
+export type NextAction = z.infer<typeof nextActionSchema>;
+
+export const paymentStatuses = ['pending', 'confirmed', 'failed', 'refunded'] as const;
+
+export const paymentStartedSchema = z.object({
+  paymentId: z.uuid(),
+  status: z.enum(paymentStatuses),
+  next: nextActionSchema,
+});
+export type PaymentStarted = z.infer<typeof paymentStartedSchema>;
+
 export const orderSchema = z.object({
   id: z.uuid(),
   reference: z.string(),
@@ -93,12 +115,32 @@ export const orderSchema = z.object({
   currency: z.string(),
   reservationExpiresAt: z.string(),
   remainingSeconds: z.number().int(),
+  // Dernier paiement de la commande (null avant le premier essai).
+  payment: z
+    .object({
+      method: z.enum(paymentMethods),
+      status: z.enum(paymentStatuses),
+      failureReason: z.string().nullable(),
+      next: nextActionSchema.nullable(),
+    })
+    .nullable(),
+  // Billets, seulement quand la commande est payée (R23) ; QR signé (§3.6).
+  tickets: z.array(
+    z.object({
+      id: z.uuid(),
+      categoryName: z.string(),
+      status: z.enum(['valid', 'used', 'void']),
+      qr: z.string(),
+    }),
+  ),
 });
 export type Order = z.infer<typeof orderSchema>;
 
 // Mesures du parcours envoyées par le navigateur (§8).
 export const funnelEventInputSchema = z.object({
-  type: z.enum(['event_view', 'checkout_started']),
+  // « payment_confirmed » est écrit par le serveur à la confirmation.
+  type: z.enum(['event_view', 'checkout_started', 'payment_initiated']),
   eventSlug: z.string().regex(/^[a-z0-9]{4,32}$/),
   anonSessionId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+  orderId: z.uuid().optional(),
 });

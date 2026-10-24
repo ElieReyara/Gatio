@@ -113,7 +113,8 @@ tactiles 48 px ; focus visible ; contraste conforme aux notes des jetons.
 - **Design** : B6 (5 états), B7 (3 états), M1.
 - **Maquettes** : B6 ✅, B7 ✅, M1 ✅.
 - **Dépend de** : 7
-- **Terminé quand** : un acheteur retrouve ses billets avec le code ; celui qui a commandé avec le numéro d'un autre ne voit pas les billets de cet autre ; réponse identique pour un numéro inconnu.
+- **Ajout (journal de bord n° 71, 24/10/2026)** : code SMS demandé avant la première réservation depuis un téléphone sans session acheteur pour ce numéro (parcours B3), qui ouvre la session ; réglage pour couper la vérification.
+- **Terminé quand** : un acheteur retrouve ses billets avec le code ; celui qui a commandé avec le numéro d'un autre ne voit pas les billets de cet autre ; réponse identique pour un numéro inconnu. Un numéro ne peut pas être réservé depuis un téléphone qui n'a pas prouvé le posséder (vérification active).
 - **PC** : PC-8 (sécurité de l'accès aux billets ; premier vrai SMS via la passerelle Android = envoi vers l'extérieur).
 
 ## 9 — Contrôleurs invités · Les deux

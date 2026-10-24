@@ -63,7 +63,7 @@ function errorOf(response: { json(): unknown }) {
 
 beforeEach(async () => {
   await pool.query(
-    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, fee_rules, buyers, orders, order_items, funnel_events cascade',
+    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, fee_rules, buyers, orders, order_items, funnel_events, payments, payment_webhook_events, reconciliation_runs, discrepancies, payouts, tickets cascade',
   );
   // Vider users en cascade vide aussi fee_rules (created_by) : on remet la règle de départ
   // de la migration 0003 (4 % + 100 FCFA).

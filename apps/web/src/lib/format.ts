@@ -56,3 +56,9 @@ export function parseAmount(value: string): number | null {
   const digits = value.replace(/[\s  .]/g, '');
   return /^\d{1,9}$/.test(digits) ? Number(digits) : null;
 }
+
+// « +235 66 12 34 56 » (maquette B4).
+export function formatPhone(e164: string): string {
+  const match = /^\+235(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(e164);
+  return match ? `+235 ${match.slice(1).join(' ')}` : e164;
+}

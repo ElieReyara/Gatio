@@ -188,7 +188,7 @@ Un fichier par jour dans `docs_ia/journal/AAAA-MM-JJ.md`, limité à 800 lignes
 
 Journal de bord (document de projet, ajout seul) :
 `docs_business/Gatio Project/Gatio-Conception/05-journal-conception.md`.
-Prochain numéro : **71**. Toute décision, tout problème ou changement de
+Prochain numéro : **73**. Toute décision, tout problème ou changement de
 direction qui engage le projet y est ajouté, dans une section ajoutée en fin
 de fichier « Entrées de l'implémentation » : tableau (N°, date, sujet,
 contexte et problème, décision ou solution, suite, statut Ouvert / Décidé /

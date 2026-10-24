@@ -43,6 +43,27 @@
       "when": 1792788964305,
       "tag": "0005_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792860698369,
+      "tag": "0006_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792860809839,
+      "tag": "0007_payment_next_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792862828842,
+      "tag": "0008_payment_indexes",
+      "breakpoints": true
     }
   ]
 }

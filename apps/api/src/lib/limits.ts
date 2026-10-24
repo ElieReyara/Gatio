@@ -10,6 +10,9 @@ export const limits = {
   // R10 : quotas par adresse IP (valeurs de départ).
   orderPerIp: { limit: 20, windowSeconds: 15 * 60 },
   funnelPerIp: { limit: 300, windowSeconds: 15 * 60 },
+  paymentPerIp: { limit: 30, windowSeconds: 15 * 60 },
+  // Notifications de paiement à signature fausse gardées pour l'enquête, par adresse.
+  invalidWebhookPerIp: { limit: 30, windowSeconds: 60 * 60 },
 } as const;
 
 export { MAX_PENDING_ORDERS_PER_PHONE } from '@gatio/shared';

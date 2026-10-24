@@ -589,7 +589,10 @@ async function ownedEvent(
     .select()
     .from(events)
     .where(and(eq(events.id, eventId), eq(events.organizerId, organizerId)));
-  const [event] = lock ? await query.for('update') : await query;
+  // « no key update » : exclusif face aux réservations (FOR SHARE) et aux autres actions de
+  // l'organisateur, mais compatible avec le verrou léger que prend la création des billets
+  // (clé étrangère vers l'événement) : aucun interblocage avec la confirmation d'un paiement.
+  const [event] = lock ? await query.for('no key update') : await query;
   if (!event) throw new AppError(404, 'NOT_FOUND', 'Événement introuvable.');
   return event;
 }
@@ -609,7 +612,7 @@ async function ownedCategory(db: DbOrTx, organizerId: string, categoryId: string
     .select()
     .from(ticketCategories)
     .where(eq(ticketCategories.id, categoryId))
-    .for('update');
+    .for('no key update');
   return { event, category: category! };
 }
 

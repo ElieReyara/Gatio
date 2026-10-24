@@ -344,3 +344,182 @@ export const funnelEvents = pgTable(
   },
   (table) => [index('funnel_events_event_type_idx').on(table.eventId, table.type)],
 );
+
+export const paymentStatus = pgEnum('payment_status', [
+  'pending',
+  'confirmed',
+  'failed',
+  'refunded',
+]);
+export const ticketStatus = pgEnum('ticket_status', ['valid', 'used', 'void']);
+export const payoutStatus = pgEnum('payout_status', ['pending', 'held', 'sent', 'failed']);
+export const discrepancyKind = pgEnum('discrepancy_kind', [
+  'missing_local',
+  'missing_provider',
+  'amount_mismatch',
+  'status_mismatch',
+  'duplicate_payment',
+  'late_payment',
+]);
+
+// R13 : un seul paiement en attente par commande ; nouvelle ligne à chaque essai.
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id),
+    provider: text('provider').notNull(),
+    providerRef: text('provider_ref').notNull(),
+    method: text('method').notNull(),
+    status: paymentStatus('status').notNull().default('pending'),
+    amount: bigint('amount', { mode: 'number' }).notNull(),
+    currency: text('currency').notNull(),
+    providerFeeAmount: bigint('provider_fee_amount', { mode: 'number' }),
+    failureReason: text('failure_reason'),
+    // Clé de rejeu exigée par le contrat (§6.1) sur le démarrage d'un paiement.
+    idempotencyKey: text('idempotency_key').notNull(),
+    // Prochaine action rendue par le prestataire (§3.11), redonnée si la demande est rejouée.
+    nextAction: jsonb('next_action'),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex('payments_provider_ref_idx').on(table.provider, table.providerRef),
+    uniqueIndex('payments_order_idempotency_idx').on(table.orderId, table.idempotencyKey),
+    uniqueIndex('payments_one_pending_idx')
+      .on(table.orderId)
+      .where(sql`${table.status} = 'pending'`),
+    index('payments_status_created_idx').on(table.status, table.createdAt),
+    check('payments_amount_positive', sql`${table.amount} > 0`),
+  ],
+);
+
+// R15 : chaque notification est gardée telle que reçue ; un doublon est ignoré.
+export const paymentWebhookEvents = pgTable(
+  'payment_webhook_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    provider: text('provider').notNull(),
+    providerEventId: text('provider_event_id').notNull(),
+    payload: jsonb('payload').notNull(),
+    signatureValid: boolean('signature_valid').notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    outcome: text('outcome'),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex('payment_webhook_events_provider_event_idx').on(
+      table.provider,
+      table.providerEventId,
+    ),
+    // Rattrapage des notifications non traitées.
+    index('payment_webhook_events_unprocessed_idx')
+      .on(table.createdAt)
+      .where(sql`${table.processedAt} is null`),
+  ],
+);
+
+export const reconciliationRuns = pgTable('reconciliation_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  provider: text('provider').notNull(),
+  periodFrom: timestamp('period_from', { withTimezone: true }).notNull(),
+  periodTo: timestamp('period_to', { withTimezone: true }).notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  summary: jsonb('summary'),
+  createdAt: createdAt(),
+});
+
+export const discrepancies = pgTable(
+  'discrepancies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    runId: uuid('run_id').references(() => reconciliationRuns.id),
+    paymentId: uuid('payment_id').references(() => payments.id),
+    providerRef: text('provider_ref'),
+    kind: discrepancyKind('kind').notNull(),
+    details: jsonb('details').notNull(),
+    status: text('status').notNull().default('open'),
+    resolvedBy: uuid('resolved_by').references(() => users.id),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    note: text('note'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check('discrepancies_status', sql`${table.status} in ('open', 'resolved')`),
+    index('discrepancies_status_idx').on(table.status),
+    index('discrepancies_payment_id_idx').on(table.paymentId),
+  ],
+);
+
+// R21 : un versement par commande payée, créé dans la transaction de confirmation.
+export const payouts = pgTable(
+  'payouts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizerId: uuid('organizer_id')
+      .notNull()
+      .references(() => organizers.id),
+    orderId: uuid('order_id')
+      .notNull()
+      .unique()
+      .references(() => orders.id),
+    amount: bigint('amount', { mode: 'number' }).notNull(),
+    currency: text('currency').notNull(),
+    method: text('method').notNull(),
+    destination: text('destination').notNull(),
+    status: payoutStatus('status').notNull(),
+    providerRef: text('provider_ref'),
+    attempts: integer('attempts').notNull().default(0),
+    lastError: text('last_error'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index('payouts_organizer_status_idx').on(table.organizerId, table.status),
+    check('payouts_amount_positive', sql`${table.amount} > 0`),
+  ],
+);
+
+// R23 : un billet n'existe qu'après la confirmation du paiement (transaction R14).
+export const tickets = pgTable(
+  'tickets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id),
+    orderItemId: uuid('order_item_id')
+      .notNull()
+      .references(() => orderItems.id),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => ticketCategories.id),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => buyers.id),
+    ordinal: integer('ordinal').notNull(),
+    status: ticketStatus('status').notNull().default('valid'),
+    issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    voidedAt: timestamp('voided_at', { withTimezone: true }),
+    voidReason: text('void_reason'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex('tickets_item_ordinal_idx').on(table.orderItemId, table.ordinal),
+    index('tickets_event_status_idx').on(table.eventId, table.status),
+    index('tickets_event_updated_idx').on(table.eventId, table.updatedAt),
+    index('tickets_buyer_id_idx').on(table.buyerId),
+    index('tickets_order_id_idx').on(table.orderId),
+  ],
+);

@@ -1,0 +1,2 @@
+CREATE INDEX "discrepancies_payment_id_idx" ON "discrepancies" USING btree ("payment_id");--> statement-breakpoint
+CREATE INDEX "payment_webhook_events_unprocessed_idx" ON "payment_webhook_events" USING btree ("created_at") WHERE "payment_webhook_events"."processed_at" is null;

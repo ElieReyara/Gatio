@@ -419,8 +419,39 @@ export const texts = {
     title: 'Paiement',
     timer: 'Vos billets sont réservés encore',
     reference: (reference: string) => `Référence de commande : ${reference}`,
-    paymentSoon:
-      'Le paiement Mobile Money arrive à l’étape suivante du projet. Votre réservation est enregistrée.',
+    // Maquette B4 et T4.
+    payWith: 'Payer avec',
+    methods: { airtel_money: 'Airtel Money', moov_money: 'Moov Money' },
+    operatorFees: 'L’opérateur de paiement peut ajouter ses propres frais sur son écran.',
+    pay: (amount: string) => `Payer ${amount}`,
+    starting: 'Envoi de la demande…',
+    confirmOnPhone: 'Confirmez le paiement sur votre téléphone',
+    requestSent: 'Une demande a été envoyée au',
+    waitingOperator: 'Nous attendons la réponse de l’opérateur.',
+    doNotPayTwice: 'Ne payez pas une seconde fois. Cette page se mettra à jour toute seule.',
+    // État sans maquette (revue de la tranche 6) : minuterie à zéro, paiement en cours.
+    stillChecking:
+      'Le délai de réservation est passé : nous gardons vos billets le temps de vérifier votre paiement.',
+    changeMethod: 'Changer de moyen de paiement',
+    // Maquette B5.
+    ready: (count: number) =>
+      count > 1 ? `Vos ${count} billets sont prêts.` : 'Votre billet est prêt.',
+    ticketLine: (category: string, index: number, count: number, reference: string) =>
+      `${category} · Billet ${index} sur ${count} · ${reference}`,
+    nextTicket: (index: number, count: number) => `Voir le billet ${index} sur ${count}`,
+    showAtEntry: 'Présentez le QR code à l’entrée.',
+    qrAlt: 'QR code du billet',
+    failed: 'Le paiement n’a pas abouti.',
+    failedText: 'Vous pouvez réessayer.',
+    retryPayment: 'Réessayer le paiement',
+    contactSupport: 'Contacter le support',
+    reviewTitle: 'Nous vérifions votre commande.',
+    reviewText: 'Votre paiement est arrivé après la fin de la réservation.',
+    keepReference: 'Gardez votre référence de commande :',
+    reviewHint:
+      'Si les billets sont encore disponibles, ils vous seront remis. Sinon, l’organisateur vous remboursera.',
+    startFailed: 'Le service de paiement ne répond pas. Réessayez dans quelques instants.',
+    tooManyPayments: 'Trop de demandes de paiement. Réessayez dans quelques minutes.',
     expired: 'Votre réservation a expiré.',
     expiredText: 'Les billets sont remis en vente. Vous pouvez recommencer.',
     retry: 'Choisir à nouveau mes billets',
@@ -430,6 +461,25 @@ export const texts = {
     toEvents: 'Voir les événements',
     loading: 'Chargement de votre commande…',
     closed: 'Cette commande n’est plus en attente de paiement.',
+  },
+  // Outil d'essai du faux prestataire (développement seulement, tranche 6).
+  fakeOperator: {
+    title: 'Faux opérateur (essai)',
+    intro:
+      'Cette page joue le rôle du téléphone de l’acheteur. Elle n’existe pas sur le site en ligne.',
+    empty: 'Aucune demande de paiement pour le moment.',
+    unavailable: 'L’API ne répond pas. Lancez pnpm dev:api.',
+    pending: 'En attente',
+    confirmed: 'Confirmé',
+    failed: 'Refusé',
+    outcomes: {
+      accept: 'Accepter',
+      refuse: 'Refuser',
+      accept_silent: 'Accepter, notification perdue',
+      accept_twice: 'Accepter, notification envoyée deux fois',
+      wrong_amount: 'Accepter avec un autre montant',
+    },
+    done: 'Envoyé.',
   },
   // Page de support (proposition validée à l'essai, journal de bord n° 66).
   support: {

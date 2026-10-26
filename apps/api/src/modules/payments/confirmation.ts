@@ -13,6 +13,7 @@ import {
   ticketCategories,
   tickets,
 } from '../../db/schema.js';
+import { queueTicketEmail } from '../tickets/email.js';
 import type { PaymentPort, ProviderResult } from './port.js';
 
 export type ApplyOutcome =
@@ -255,6 +256,9 @@ async function issue(tx: Tx, order: OrderRow, items: Array<typeof orderItems.$in
       status: held ? 'held' : 'pending',
     })
     .onConflictDoNothing();
+
+  // R14 : envoi du billet mis en file dans la même transaction (R32).
+  await queueTicketEmail(tx, order);
 }
 
 async function openDiscrepancy(

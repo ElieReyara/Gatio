@@ -7,6 +7,7 @@ import {
   type ScanManifest,
 } from '@gatio/shared';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { renderTicketPdf } from '../tickets/pdf.js';
 import type { TicketSigner } from '../tickets/signing.js';
 
 // Prototype de la tranche 1 (développement seulement) : liste fictive en mémoire pour
@@ -72,6 +73,24 @@ export const scanPrototypeRoutes =
         return { items };
       },
     );
+
+    // Critère de la tranche 7 : le PDF du billet se scanne avec la page de la tranche 1.
+    // Billet Standard n° 1 de la liste fictive, dessiné par le même générateur que les vrais.
+    app.get('/sample.pdf', { schema: { hide: true } }, async (_request, reply) => {
+      const pdf = await renderTicketPdf({
+        eventTitle: 'Événement d’essai (prototype)',
+        startsAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+        venue: 'Salle d’essai',
+        city: "N'Djamena",
+        categoryName: 'Standard',
+        price: 5000,
+        reference: 'GT-ESSAI1',
+        index: 1,
+        count: 1,
+        qr: sign(standard1),
+      });
+      return reply.type('application/pdf').send(pdf);
+    });
 
     // Billet « vendu après le téléchargement de la liste » : absent de la liste du téléphone.
     app.post(

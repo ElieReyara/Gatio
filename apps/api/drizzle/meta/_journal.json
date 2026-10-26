@@ -64,6 +64,20 @@
       "when": 1792862828842,
       "tag": "0008_payment_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793034712106,
+      "tag": "0009_ticket_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793038106980,
+      "tag": "0010_outbound_retries",
+      "breakpoints": true
     }
   ]
 }

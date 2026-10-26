@@ -17,14 +17,15 @@ import {
   funnelEvents,
   orderItems,
   orders,
+  outboundMessages,
   payments,
   ticketCategories,
-  tickets,
 } from '../../db/schema.js';
 import { AppError } from '../../lib/errors.js';
 import { limits } from '../../lib/limits.js';
 import { consumeLimit } from '../../lib/rate-limit.js';
-import { hashToken } from '../../lib/tokens.js';
+import { orderByToken } from './access.js';
+import { loadOrderTickets } from '../tickets/documents.js';
 import type { TicketSigner } from '../tickets/signing.js';
 import { createOrder, replayOrder } from './reservation.js';
 
@@ -95,24 +96,17 @@ export const orderRoutes =
       async (request, reply): Promise<Order> => {
         // Réponse propre à un jeton : jamais gardée par un cache intermédiaire.
         void reply.header('cache-control', 'no-store');
-        const token = request.headers['x-order-token'];
-        const [row] =
-          typeof token === 'string' && token.length > 0 && token.length <= 100
-            ? await db
-                .select({
-                  order: orders,
-                  event: events,
-                  remaining: sql<number>`greatest(0, floor(extract(epoch from (${orders.reservationExpiresAt} - now()))))::int`,
-                })
-                .from(orders)
-                .innerJoin(events, eq(events.id, orders.eventId))
-                .where(
-                  and(
-                    eq(orders.id, request.params.id),
-                    eq(orders.accessTokenHash, hashToken(token)),
-                  ),
-                )
-            : [];
+        const found = await orderByToken(db, request.params.id, request.headers['x-order-token']);
+        if (!found) throw new AppError(404, 'NOT_FOUND', 'Commande introuvable.');
+        const [row] = await db
+          .select({
+            order: orders,
+            event: events,
+            remaining: sql<number>`greatest(0, floor(extract(epoch from (${orders.reservationExpiresAt} - now()))))::int`,
+          })
+          .from(orders)
+          .innerJoin(events, eq(events.id, orders.eventId))
+          .where(eq(orders.id, found.id));
         if (!row) throw new AppError(404, 'NOT_FOUND', 'Commande introuvable.');
         const lines = await db
           .select({ item: orderItems, categoryName: ticketCategories.name })
@@ -130,15 +124,15 @@ export const orderRoutes =
         // R23 : billets seulement pour une commande payée ; QR signé à la lecture (la
         // signature Ed25519 est déterministe, rien n'est stocké).
         const issued =
-          row.order.status === 'paid'
-            ? await db
-                .select({ ticket: tickets, categoryName: ticketCategories.name })
-                .from(tickets)
-                .innerJoin(ticketCategories, eq(ticketCategories.id, tickets.categoryId))
-                .innerJoin(orderItems, eq(orderItems.id, tickets.orderItemId))
-                .where(eq(tickets.orderId, row.order.id))
-                .orderBy(asc(ticketCategories.position), asc(orderItems.id), asc(tickets.ordinal))
-            : [];
+          row.order.status === 'paid' ? await loadOrderTickets(db, signer, row.order.id) : [];
+        const [email] = await db
+          .select({ status: outboundMessages.status })
+          .from(outboundMessages)
+          .where(
+            and(eq(outboundMessages.orderId, row.order.id), eq(outboundMessages.purpose, 'ticket')),
+          )
+          .orderBy(desc(outboundMessages.createdAt))
+          .limit(1);
         return {
           id: row.order.id,
           reference: row.order.reference,
@@ -168,16 +162,13 @@ export const orderRoutes =
                 next: payment.status === 'pending' && parsedNext.success ? parsedNext.data : null,
               }
             : null,
-          tickets: issued.map(({ ticket, categoryName }) => ({
-            id: ticket.id,
-            categoryName,
+          tickets: issued.map((ticket) => ({
+            id: ticket.ticketId,
+            categoryName: ticket.categoryName,
             status: ticket.status,
-            qr: signer.signTicket({
-              ticketId: ticket.id,
-              eventId: ticket.eventId,
-              categoryId: ticket.categoryId,
-            }),
+            qr: ticket.qr,
           })),
+          ticketEmail: (email?.status as 'queued' | 'sent' | 'failed' | undefined) ?? null,
         };
       },
     );

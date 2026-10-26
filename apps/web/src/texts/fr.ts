@@ -35,6 +35,8 @@ export const texts = {
   },
   // Page d'essai du prototype (développement seulement, sans maquette : outil interne).
   prototype: {
+    // Critère de la tranche 7 : le PDF du billet se scanne avec cette page.
+    samplePdf: 'Billet Standard n° 1 en PDF (essai d’impression et de scan)',
     title: 'Billets d’essai du scan',
     intro:
       'Billets fictifs signés par l’API. Ouvrez la page de scan sur le téléphone, laissez-la télécharger la liste, puis visez ces QR codes.',
@@ -440,6 +442,14 @@ export const texts = {
       `${category} · Billet ${index} sur ${count} · ${reference}`,
     nextTicket: (index: number, count: number) => `Voir le billet ${index} sur ${count}`,
     showAtEntry: 'Présentez le QR code à l’entrée.',
+    download: 'Télécharger ce billet',
+    voidTicket: 'Ce billet est annulé : il ne permet plus d’entrer.',
+    downloading: 'Téléchargement…',
+    downloadFailed: 'Le téléchargement n’a pas abouti. Réessayez dans un instant.',
+    emailSent: (count: number) =>
+      count > 1
+        ? 'Vos billets ont aussi été envoyés par email.'
+        : 'Votre billet a aussi été envoyé par email.',
     qrAlt: 'QR code du billet',
     failed: 'Le paiement n’a pas abouti.',
     failedText: 'Vous pouvez réessayer.',
@@ -461,6 +471,18 @@ export const texts = {
     toEvents: 'Voir les événements',
     loading: 'Chargement de votre commande…',
     closed: 'Cette commande n’est plus en attente de paiement.',
+  },
+  // Validation de l'email (maquette B9).
+  emailConfirm: {
+    checking: 'Vérification du lien…',
+    confirmed: 'Votre email est confirmé.',
+    confirmedText: 'Vos prochains billets seront aussi envoyés à cette adresse.',
+    invalid: 'Ce lien n’est plus valable.',
+    invalidText: 'Il a expiré ou a déjà été utilisé.',
+    stillValid: 'Votre billet reste valable. Vous n’avez rien à refaire.',
+    unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
+    // « Voir mes billets » (B9) : la page « Mes billets » arrive en tranche 8.
+    toEvents: 'Voir les événements',
   },
   // Outil d'essai du faux prestataire (développement seulement, tranche 6).
   fakeOperator: {

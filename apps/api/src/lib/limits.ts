@@ -13,6 +13,8 @@ export const limits = {
   paymentPerIp: { limit: 30, windowSeconds: 15 * 60 },
   // Notifications de paiement à signature fausse gardées pour l'enquête, par adresse.
   invalidWebhookPerIp: { limit: 30, windowSeconds: 60 * 60 },
+  emailVerifyPerIp: { limit: 30, windowSeconds: 60 * 60 },
+  ticketPdfPerIp: { limit: 60, windowSeconds: 15 * 60 },
 } as const;
 
 export { MAX_PENDING_ORDERS_PER_PHONE } from '@gatio/shared';

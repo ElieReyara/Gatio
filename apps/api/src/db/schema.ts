@@ -280,6 +280,9 @@ export const orders = pgTable(
     feeTotal: bigint('fee_total', { mode: 'number' }).notNull(),
     payoutTotal: bigint('payout_total', { mode: 'number' }).notNull(),
     accessTokenHash: text('access_token_hash').notNull(),
+    // Second jeton de la commande, créé à la confirmation pour le lien de l'email du billet
+    // (§3.5) : le jeton du navigateur n'est plus connu en clair à ce moment-là.
+    emailAccessTokenHash: text('email_access_token_hash'),
     idempotencyKey: text('idempotency_key').notNull(),
     // Adresse ou session anonyme : la clé de rejeu n'est unique que pour un même client.
     idempotencyScope: text('idempotency_scope').notNull(),
@@ -521,5 +524,55 @@ export const tickets = pgTable(
     index('tickets_event_updated_idx').on(table.eventId, table.updatedAt),
     index('tickets_buyer_id_idx').on(table.buyerId),
     index('tickets_order_id_idx').on(table.orderId),
+  ],
+);
+
+// R32 : l'email n'est rattaché au compte acheteur qu'après validation de ce lien.
+export const emailVerifications = pgTable(
+  'email_verifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => buyers.id),
+    email: citext('email').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [index('email_verifications_buyer_id_idx').on(table.buyerId)],
+);
+
+// Suivi des SMS et emails (coût par billet, aide au support) ; destinataire gardé 90 jours (S7).
+export const outboundMessages = pgTable(
+  'outbound_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    channel: text('channel').notNull(),
+    purpose: text('purpose').notNull(),
+    recipient: text('recipient'),
+    status: text('status').notNull().default('queued'),
+    providerRef: text('provider_ref'),
+    orderId: uuid('order_id').references(() => orders.id),
+    // Relances espacées : nombre d'essais et heure du prochain (sert aussi de réservation
+    // du message pendant un envoi en cours).
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check('outbound_messages_channel', sql`${table.channel} in ('sms', 'email')`),
+    check(
+      'outbound_messages_purpose',
+      sql`${table.purpose} in ('otp', 'ticket', 'email_verification', 'password_reset')`,
+    ),
+    check('outbound_messages_status', sql`${table.status} in ('queued', 'sent', 'failed')`),
+    index('outbound_messages_order_id_idx').on(table.orderId),
+    index('outbound_messages_queued_idx')
+      .on(table.nextAttemptAt)
+      .where(sql`${table.status} = 'queued'`),
+    index('outbound_messages_created_at_idx').on(table.createdAt),
   ],
 );

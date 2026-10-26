@@ -13,7 +13,15 @@ import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
 import { BackHeader } from '@/components/public/BackHeader';
 import { getJson, postJson } from '@/lib/api-client';
-import { orderToken, randomKey, trackFunnel } from '@/lib/buyer-storage';
+import {
+  clearLinkParams,
+  downloadTicketPdf,
+  orderToken,
+  randomKey,
+  readLinkParams,
+  saveOrderToken,
+  trackFunnel,
+} from '@/lib/buyer-storage';
 import { formatDateTime, formatMoney, formatPhone } from '@/lib/format';
 import { texts } from '@/texts/fr';
 
@@ -39,14 +47,29 @@ export function OrderView({ orderId }: { orderId: string }) {
   // Même clé tant qu'aucune réponse n'est arrivée (réseau coupé) : renvoyer la demande ne
   // déclenche pas une seconde demande de paiement sur le téléphone (§6.1).
   const [attempt, setAttempt] = useState<{ method: PaymentMethod; key: string } | null>(null);
+  // Lien de l'email : jeton et billet demandé, lus une fois à l'ouverture de la page.
+  const [link] = useState(() => readLinkParams());
+  const [initialTicket] = useState(() => Math.max(0, (link.ticket ?? 1) - 1));
 
   const load = useCallback(async () => {
-    const token = orderToken(orderId);
-    if (!token) {
+    const stored = orderToken(orderId);
+    let result = stored
+      ? await getJson<unknown>(`/orders/${orderId}`, { 'x-order-token': stored })
+      : null;
+    // Le jeton déjà gardé par ce téléphone reste prioritaire ; celui du lien ne le
+    // remplace que s'il ouvre la commande.
+    if ((!result || (!result.ok && result.status === 404)) && link.token) {
+      const viaLink = await getJson<unknown>(`/orders/${orderId}`, {
+        'x-order-token': link.token,
+      });
+      if (viaLink.ok) saveOrderToken(orderId, link.token);
+      result = viaLink;
+    }
+    if (link.token) clearLinkParams();
+    if (!result) {
       setState({ kind: 'missing' });
       return;
     }
-    const result = await getJson<unknown>(`/orders/${orderId}`, { 'x-order-token': token });
     const parsed = result.ok ? orderSchema.safeParse(result.data) : null;
     if (parsed?.success) {
       const order = parsed.data;
@@ -60,7 +83,7 @@ export function OrderView({ orderId }: { orderId: string }) {
           : { kind: !result.ok && result.status === 404 ? 'missing' : 'error' },
       );
     }
-  }, [orderId]);
+  }, [orderId, link.token]);
 
   useEffect(() => {
     void load();
@@ -166,7 +189,7 @@ export function OrderView({ orderId }: { orderId: string }) {
   if (order.status === 'paid') {
     return (
       <Frame title={texts.app.name}>
-        <Tickets order={order} />
+        <Tickets order={order} orderId={orderId} initialIndex={initialTicket} />
       </Frame>
     );
   }
@@ -348,9 +371,21 @@ function PaymentChoice({
 }
 
 // Billets à l'écran (B5) : un billet à la fois, QR dessiné dans le navigateur.
-function Tickets({ order }: { order: Order }) {
-  const [index, setIndex] = useState(0);
+function Tickets({
+  order,
+  orderId,
+  initialIndex,
+}: {
+  order: Order;
+  orderId: string;
+  initialIndex: number;
+}) {
+  const [index, setIndex] = useState(() =>
+    initialIndex < order.tickets.length ? initialIndex : 0,
+  );
   const [svg, setSvg] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadFailed, setDownloadFailed] = useState(false);
   const count = order.tickets.length;
   const ticket = order.tickets[index];
 
@@ -393,6 +428,29 @@ function Tickets({ order }: { order: Order }) {
           {t.ticketLine(ticket.categoryName, index + 1, count, order.reference)}
         </div>
       </div>
+      {downloadFailed && <Banner kind="error">{t.downloadFailed}</Banner>}
+      {ticket.status === 'void' ? (
+        <Banner kind="error">{t.voidTicket}</Banner>
+      ) : (
+        <button
+          type="button"
+          className="button-primary button-large"
+          disabled={downloading}
+          onClick={async () => {
+            setDownloading(true);
+            setDownloadFailed(false);
+            const ok = await downloadTicketPdf(
+              orderId,
+              ticket.id,
+              `billet-${order.reference}-${index + 1}.pdf`,
+            );
+            setDownloadFailed(!ok);
+            setDownloading(false);
+          }}
+        >
+          {downloading ? t.downloading : t.download}
+        </button>
+      )}
       {count > 1 && (
         <button
           type="button"
@@ -405,7 +463,10 @@ function Tickets({ order }: { order: Order }) {
           {t.nextTicket(((index + 1) % count) + 1, count)}
         </button>
       )}
-      <p className="fine-print">{t.showAtEntry}</p>
+      <p className="fine-print">
+        {order.ticketEmail === 'sent' ? `${t.emailSent(count)} ` : ''}
+        {t.showAtEntry}
+      </p>
     </>
   );
 }

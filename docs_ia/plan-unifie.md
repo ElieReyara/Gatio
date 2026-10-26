@@ -114,6 +114,7 @@ tactiles 48 px ; focus visible ; contraste conforme aux notes des jetons.
 - **Maquettes** : B6 ✅, B7 ✅, M1 ✅.
 - **Dépend de** : 7
 - **Ajout (journal de bord n° 71, 24/10/2026)** : code SMS demandé avant la première réservation depuis un téléphone sans session acheteur pour ce numéro (parcours B3), qui ouvre la session ; réglage pour couper la vérification.
+- **Ajout (journal de bord n° 73, 26/10/2026)** : une fois le numéro vérifié, envoyer aussi le billet à l'email validé du compte quand l'achat n'en donne pas (promesse de B9) ; rattacher l'email seulement pour un numéro vérifié.
 - **Terminé quand** : un acheteur retrouve ses billets avec le code ; celui qui a commandé avec le numéro d'un autre ne voit pas les billets de cet autre ; réponse identique pour un numéro inconnu. Un numéro ne peut pas être réservé depuis un téléphone qui n'a pas prouvé le posséder (vérification active).
 - **PC** : PC-8 (sécurité de l'accès aux billets ; premier vrai SMS via la passerelle Android = envoi vers l'extérieur).
 

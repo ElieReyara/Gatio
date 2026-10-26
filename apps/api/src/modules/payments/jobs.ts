@@ -153,14 +153,18 @@ export async function startPaymentJobs(
   db: Db,
   port: PaymentPort,
   log: FastifyBaseLogger,
+  // Après une confirmation possible : l'email du billet part sans attendre.
+  afterConfirmation: () => Promise<void>,
 ) {
   await boss.createQueue(NOTIFICATION_QUEUE);
   await boss.work<{ notificationId: string }>(NOTIFICATION_QUEUE, async (jobs) => {
     for (const job of jobs) await processNotification(db, port, job.data.notificationId);
+    await afterConfirmation();
   });
   await boss.createQueue(POLL_QUEUE);
   await boss.schedule(POLL_QUEUE, '* * * * *');
   await boss.work(POLL_QUEUE, async () => {
     await pollPendingPayments(db, port, log);
+    await afterConfirmation();
   });
 }

@@ -14,7 +14,7 @@ Les versions sont fixées à l'installation (tranche 0) et notées ici.
 | @next/eslint-plugin-next | 16.4.2 | Règles Next.js | `pnpm lint` | `eslint.config.mjs` | Idem — à la place de `eslint-config-next` (même famille, importable directement) |
 | prettier | 3.9.9 | Mise en forme | `pnpm lint`, `pnpm format` | `.prettierrc.json`, `.prettierignore` | Idem |
 | vitest | 5.0.3 | Tests unitaires et d'intégration | `pnpm test`, `pnpm test:integration` | `apps/api/vitest*.config.ts` | Idem |
-| zod | 4.6.5 | Schémas partagés, configuration | Validation | `packages/shared/src`, `apps/api/src/config.ts` | Idem |
+| zod | 4.6.6 | Schémas partagés, configuration | Validation | `packages/shared/src`, `apps/api/src/config.ts` | Idem ; 4.6.5 → 4.6.6 le 26/10/2026 (faille haute GHSA-mrhx-c7xc-m3w5, ERR-013) |
 | fastify | 5.12.7 | API | Serveur HTTP | `apps/api/src/app.ts` | Idem |
 | fastify-type-provider-zod | 7.0.0 | Validation Zod dans Fastify, OpenAPI | Routes | `apps/api/src/app.ts` | Idem |
 | @fastify/swagger | 9.9.1 | OpenAPI généré | `/api/v1/openapi.json` | `apps/api/src/app.ts` | Idem |
@@ -29,6 +29,10 @@ Les versions sont fixées à l'installation (tranche 0) et notées ici.
 | react, react-dom (+ @types) | 19.3.0 | Interface web | Composants | `apps/web/src` | Idem |
 | Image `postgres:17-alpine` | 17 | Base locale et CI | `docker-compose.yml`, CI | | Idem |
 | Image `axllent/mailpit` | v1.31.4 | Boîte email de test | `docker-compose.yml` | | Idem |
+| pdfkit | 0.20.2 | Génération du billet PDF (maquette P1) | Serveur seulement, PDF à la demande | `apps/api/src/modules/tickets/pdf.ts` | Responsable, 26/10/2026 (tranche 7, choix entre pdfkit et pdf-lib) |
+| @types/pdfkit | 0.17.6 | Types de pdfkit | Compilation | `apps/api` | Idem ; 0.17.7 trop récente (règle des 2 semaines) |
+| qrcode (API) | 1.5.4 | QR code dessiné en vecteurs dans le PDF | Serveur | `apps/api/src/modules/tickets/pdf.ts` | Idem (même version que le site) |
+| @types/qrcode (API) | 1.5.6 | Types de qrcode | Compilation | `apps/api` | Idem |
 
 Télémétrie de Next.js coupée par le `postinstall` de la racine (`next telemetry disable`) et en CI (`NEXT_TELEMETRY_DISABLED=1`).
 

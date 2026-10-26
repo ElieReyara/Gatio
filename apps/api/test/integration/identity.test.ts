@@ -12,7 +12,7 @@ let app: FastifyInstance;
 
 beforeEach(async () => {
   await pool.query(
-    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, buyers, orders, order_items, funnel_events, payments, payment_webhook_events, reconciliation_runs, discrepancies, payouts, tickets cascade',
+    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, buyers, orders, order_items, funnel_events, payments, payment_webhook_events, reconciliation_runs, discrepancies, payouts, tickets, email_verifications, outbound_messages cascade',
   );
   deps = testDependencies(pool);
   app = await buildApp(deps);

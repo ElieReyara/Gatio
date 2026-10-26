@@ -133,8 +133,13 @@ export const orderSchema = z.object({
       qr: z.string(),
     }),
   ),
+  // Envoi du billet par email (R32) : null si aucune adresse.
+  ticketEmail: z.enum(['queued', 'sent', 'failed']).nullable(),
 });
 export type Order = z.infer<typeof orderSchema>;
+
+// Validation de l'email de l'acheteur (contrat §6.2, maquette B9).
+export const emailVerificationConfirmSchema = z.object({ token: z.string().min(1).max(100) });
 
 // Mesures du parcours envoyées par le navigateur (§8).
 export const funnelEventInputSchema = z.object({

@@ -28,6 +28,7 @@ import type { PaymentPort } from './modules/payments/port.js';
 import { paymentRoutes, paymentWebhookRoutes } from './modules/payments/routes.js';
 import { publicRoutes } from './modules/public/routes.js';
 import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
+import { ticketRoutes } from './modules/tickets/routes.js';
 import type { TicketSigner } from './modules/tickets/signing.js';
 
 export type AppDependencies = {
@@ -136,6 +137,7 @@ export async function buildApp({
       await api.register(publicRoutes(db));
       await api.register(orderRoutes(db, ticketSigner));
       await api.register(paymentRoutes(db, payments));
+      await api.register(ticketRoutes(db, ticketSigner));
       await api.register(paymentWebhookRoutes(db, payments, onNotification));
       if (config.nodeEnv !== 'production') {
         await api.register(scanPrototypeRoutes(ticketSigner), { prefix: '/dev/scan-prototype' });

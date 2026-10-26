@@ -1162,3 +1162,10 @@ body {
   width: 100%;
   height: 100%;
 }
+
+/* Bouton de téléchargement du billet (maquette B5). */
+.button-large {
+  min-height: 56px;
+  font-size: 20px;
+  line-height: 26px;
+}

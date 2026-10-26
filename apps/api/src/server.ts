@@ -9,6 +9,7 @@ import { mailpitEmail } from './modules/email/port.js';
 import { diskStorage } from './modules/media/storage.js';
 import { fakePaymentProvider } from './modules/payments/fake-provider.js';
 import { jobNotificationQueue, startPaymentJobs } from './modules/payments/jobs.js';
+import { startTicketEmailJobs } from './modules/tickets/email.js';
 import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
 
 const config = loadConfig();
@@ -40,14 +41,20 @@ if (!config.ticketSigning.privateKey) {
 pool.on('error', (error) => app.log.error({ err: error }, 'idle database client error'));
 jobs.on('error', (error) => app.log.error({ err: error }, 'job queue error'));
 await jobs.start();
-await startEmailWorker(
-  jobs,
-  mailpitEmail(config.email.mailpitUrl, { email: config.email.from, name: 'Gatio' }),
-  app.log,
-);
+const emailPort = mailpitEmail(config.email.mailpitUrl, {
+  email: config.email.from,
+  name: 'Gatio',
+});
+await startEmailWorker(jobs, emailPort, app.log);
 await startMaintenance(jobs, pool);
 await startReservationExpiry(jobs, db);
-await startPaymentJobs(jobs, db, payments, app.log);
+const sendTicketEmails = await startTicketEmailJobs(jobs, db, {
+  email: emailPort,
+  signer: ticketSigner,
+  webUrl: config.webUrl,
+  log: app.log,
+});
+await startPaymentJobs(jobs, db, payments, app.log, sendTicketEmails);
 await app.listen({ port: config.port, host: config.host });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

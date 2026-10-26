@@ -34,6 +34,11 @@ export default async function TestTicketsPage() {
       <h1 className="title">{t.title}</h1>
       <p>{t.intro}</p>
       <p>{t.density(modules.size, version)}</p>
+      <p>
+        <a className="link link--tight" href="/api/v1/dev/scan-prototype/sample.pdf">
+          {t.samplePdf}
+        </a>
+      </p>
       <div className="qr-grid">
         {cards.map(({ sample, svg }) => (
           <QrCard key={sample.label} sample={sample} svg={svg} />

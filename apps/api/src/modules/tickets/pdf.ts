@@ -15,6 +15,8 @@ export type TicketDocument = {
   qr: string;
   // Événement reporté : « Date à confirmer », comme sur sa page (B2).
   postponed?: boolean;
+  // Événement annulé : bandeau en tête du billet (décision du responsable, PC-7).
+  cancelled?: boolean;
 };
 
 // Un titre ou un lieu saisi avec des retours à la ligne reste sur ses lignes prévues.
@@ -64,6 +66,18 @@ export async function renderTicketPdf(
     .lineWidth(3)
     .stroke(INK);
 
+  let top = 120;
+  if (ticket.cancelled) {
+    doc.rect(left, 110, width, 44).fill(INK);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(22)
+      .fillColor('#ffffff')
+      .text('ÉVÉNEMENT ANNULÉ', left, 121, { width, align: 'center', lineBreak: false });
+    doc.fillColor(INK);
+    top = 172;
+  }
+
   // Événement.
   // Titre long : police réduite pour garder la place du QR code.
   doc.font('Helvetica-Bold');
@@ -72,7 +86,7 @@ export async function renderTicketPdf(
       (size) =>
         doc.fontSize(size).heightOfString(oneLine(ticket.eventTitle), { width }) <= 3.6 * size,
     ) ?? 18;
-  doc.fontSize(titleSize).text(oneLine(ticket.eventTitle), left, 120, { width });
+  doc.fontSize(titleSize).text(oneLine(ticket.eventTitle), left, top, { width });
   doc.moveDown(0.3);
   doc
     .font('Helvetica-Bold')
@@ -87,7 +101,7 @@ export async function renderTicketPdf(
   const boxTop = doc.y + 20;
   const boxWidth = (width - 16) / 2;
   for (const [i, [label, value]] of [
-    ['CATÉGORIE', ticket.categoryName],
+    ['CATÉGORIE', oneLine(ticket.categoryName)],
     ['PRIX', formatMoney(ticket.price)],
   ].entries()) {
     const x = left + i * (boxWidth + 16);

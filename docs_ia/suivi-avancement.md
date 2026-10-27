@@ -18,7 +18,7 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | 4 | Publication, page publique, recherche, annulation/report, signalement | Haute | 3 | Aperçu de partage ; poids mesuré ; bandeaux ; republication ; lien support pré-rempli | PC-4 ✔ | terminé (23/10/2026) |
 | 5 | Réserver des billets | Haute | 4 | 100 achats simultanés → 1 gagnant ; expiration ; idempotence ; période ; double saisie ; annulation concurrente | PC-5 ✔ | terminé (24/10/2026 ; essai de l'expiration reporté) |
 | 6 | Payer et recevoir le billet (faux prestataire) | Haute | 5, 1 | Cas R13–R18 testés ; aucun billet avant confirmation | PC-6 ✔ | terminé (26/10/2026) |
-| 7 | Billet téléchargeable et email | Haute | 6 | PDF scannable ; email dans Mailpit ; email rattaché après validation | PC-7 | en attente de contrôle (construite le 26/10/2026) |
+| 7 | Billet téléchargeable et email | Haute | 6 | PDF scannable ; email dans Mailpit ; email rattaché après validation | PC-7 ✔ | terminé (27/10/2026) |
 | 8 | Reconnexion par SMS et « mes billets » | Moyenne | 7 | Billets retrouvés par code ; pas d'accès aux billets d'autrui ; réponse identique | PC-8 | à faire |
 | 9 | Contrôleurs invités | Haute | 3 | Lien révoqué ou expiré refusé, sessions coupées | (PC-10) | à faire |
 | 10 | Scan complet et synchronisation | Haute | 6, 9, 1 | Grille manuelle iPhone + Android réussie | PC-10 | à faire |

@@ -144,6 +144,8 @@ export const texts = {
       title: 'Titre',
       titlePlaceholder: 'Ex. Soirée Sahel Live',
       titleMissing: 'Indiquez le titre de l’événement.',
+      unsupportedCharacters:
+        'Écrivez avec l’alphabet latin (accents compris), sans émoji : le billet imprimé ne sait pas encore afficher les autres caractères.',
       description: 'Description',
       descriptionPlaceholder:
         'Parlez de votre événement : programme, artistes, informations utiles.',

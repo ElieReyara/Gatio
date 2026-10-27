@@ -1,3 +1,5 @@
+import { isPrintableOnTicket } from '@gatio/shared';
+import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import { describe, expect, it } from 'vitest';
 import { renderTicketPdf, type TicketDocument } from './pdf.js';
@@ -67,6 +69,40 @@ describe('billet PDF (P1)', () => {
       { compress: false },
     );
     expect(pdf.toString('latin1').match(/\/Type \/Page\b/g)).toHaveLength(1);
+  });
+
+  it('événement annulé : bandeau « ÉVÉNEMENT ANNULÉ », toujours une seule page', async () => {
+    const pdf = (
+      await renderTicketPdf(
+        ticket({
+          cancelled: true,
+          eventTitle: 'Grand concert de fin d’année '.repeat(6),
+          venue: 'Salle des fêtes du quartier '.repeat(4),
+        }),
+        { compress: false },
+      )
+    ).toString('latin1');
+    const hex = Buffer.from('ÉVÉNEMENT ANNULÉ', 'latin1').toString('hex');
+    expect(pdf.toLowerCase()).toContain(hex);
+    expect(pdf.match(/\/Type \/Page\b/g)).toHaveLength(1);
+  });
+
+  it('le contrôle des titres (n° 74) n’accepte que des caractères que le PDF sait écrire', () => {
+    const doc = new PDFDocument();
+    doc.font('Helvetica-Bold');
+    // Police standard chargée par pdfkit (interne) : nom du glyphe de chaque caractère.
+    const font = (
+      doc as unknown as { _font: { font: { glyphsForString(text: string): string[] } } }
+    )._font.font;
+    const missing: string[] = [];
+    for (let code = 0x20; code <= 0xffff; code++) {
+      const char = String.fromCharCode(code);
+      if (isPrintableOnTicket(char) && font.glyphsForString(char)[0] === '.notdef') {
+        missing.push(code.toString(16));
+      }
+    }
+    expect(missing).toEqual([]);
+    expect(font.glyphsForString('ح')[0]).toBe('.notdef');
   });
 
   it('événement reporté : « Date à confirmer » au lieu de la date', async () => {

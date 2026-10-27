@@ -6,6 +6,7 @@ import {
   eventTypes,
   IMAGE_MAX_BYTES,
   type OrganizerEvent,
+  UNSUPPORTED_CHARACTERS,
 } from '@gatio/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -82,7 +83,8 @@ export function EventForm({ event }: { event?: OrganizerEvent }) {
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const field = issue.path[0] as Exclude<FieldName, 'image'>;
-        next[field] ??= missing[field];
+        next[field] ??=
+          issue.message === UNSUPPORTED_CHARACTERS ? t.unsupportedCharacters : missing[field];
       }
     } else if (
       new Date(parsed.data.startsAt).getTime() <= Date.now() &&

@@ -188,7 +188,7 @@ Un fichier par jour dans `docs_ia/journal/AAAA-MM-JJ.md`, limité à 800 lignes
 
 Journal de bord (document de projet, ajout seul) :
 `docs_business/Gatio Project/Gatio-Conception/05-journal-conception.md`.
-Prochain numéro : **74**. Toute décision, tout problème ou changement de
+Prochain numéro : **75**. Toute décision, tout problème ou changement de
 direction qui engage le projet y est ajouté, dans une section ajoutée en fin
 de fichier « Entrées de l'implémentation » : tableau (N°, date, sujet,
 contexte et problème, décision ou solution, suite, statut Ouvert / Décidé /
@@ -299,6 +299,10 @@ Bon à savoir (test à froid du 21/10/2026) :
   pendant un essai du responsable sur `pnpm start:web`.
 - Port déjà pris : API par `API_PORT` dans `.env` ; base et Mailpit dans
   `docker-compose.yml`. En développement l'API n'écoute que sur `127.0.0.1`.
+- `ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL` ne dit rien : lire les lignes au-dessus.
+  `EADDRINUSE … :3000` (ou `:4000`) = un serveur tourne déjà ; l'arrêter (Ctrl+C
+  dans son terminal) ou utiliser celui qui tourne (ERR-014). Avant un essai du
+  responsable, l'agent arrête ses propres serveurs.
 
 Outils retenus (accord PC-0a du 21/10/2026) : Vitest, ESLint + typescript-eslint
 + règles Next.js, Prettier. Versions : `docs_ia/dependances.md`.

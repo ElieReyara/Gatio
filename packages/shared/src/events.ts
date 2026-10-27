@@ -68,13 +68,29 @@ export const payoutAccountSchema = z.object({
 });
 export type PayoutAccountInput = z.input<typeof payoutAccountSchema>;
 
+// Caractères que les polices standard du billet PDF savent écrire (WinAnsi : alphabet latin
+// avec ses accents, guillemets, tirets, €). Au lancement, ce qui est imprimé sur le billet s'y
+// limite (journal de bord n° 74) ; les autres écritures demanderont une police intégrée.
+const TICKET_PRINTABLE =
+  /^[\t\n\r\u0020-\u007E\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]*$/;
+export const isPrintableOnTicket = (text: string) => TICKET_PRINTABLE.test(text);
+export const UNSUPPORTED_CHARACTERS = 'unsupported_characters';
+
+const ticketText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .max(max)
+    .refine(isPrintableOnTicket, { message: UNSUPPORTED_CHARACTERS });
+
 // Événement (maquette O3). Description en texte brut (S3).
 const eventFields = {
-  title: z.string().trim().min(1).max(120),
+  title: ticketText(120),
   description: z.string().trim().min(1).max(5000),
   eventType: z.enum(eventTypes),
   city: z.enum(cities),
-  venue: z.string().trim().min(1).max(200),
+  venue: ticketText(200),
   startsAt: z.iso.datetime({ offset: true }),
   capacity: z.coerce.number().int().min(1).max(100_000),
 };
@@ -85,7 +101,7 @@ export type EventUpdate = z.infer<typeof eventUpdateSchema>;
 
 // Catégorie de billets (maquette O4), période de vente facultative (R12).
 const categoryFields = {
-  name: z.string().trim().min(1).max(60),
+  name: ticketText(60),
   priceAmount: z.coerce.number().int().min(1).max(100_000_000),
   quantityTotal: z.coerce.number().int().min(1).max(100_000),
   saleStartsAt: z.iso.datetime({ offset: true }).nullable().optional(),

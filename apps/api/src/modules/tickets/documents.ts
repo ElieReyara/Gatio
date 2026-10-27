@@ -42,6 +42,7 @@ export async function loadOrderTickets(
     venue: row.event.venue,
     city: row.event.city,
     postponed: row.event.status === 'postponed',
+    cancelled: row.event.status === 'cancelled',
     categoryName: row.categoryName,
     price: row.price,
     reference: row.reference,

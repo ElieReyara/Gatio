@@ -1,6 +1,11 @@
 'use client';
 
-import { categoryCreateSchema, type Category, type FeePreview } from '@gatio/shared';
+import {
+  categoryCreateSchema,
+  UNSUPPORTED_CHARACTERS,
+  type Category,
+  type FeePreview,
+} from '@gatio/shared';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Banner } from '@/components/Banner';
@@ -70,7 +75,12 @@ export function CategoryForm({
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const field = issue.path[0];
-        if (field === 'name') next.name = t.nameMissing;
+        if (field === 'name') {
+          next.name =
+            issue.message === UNSUPPORTED_CHARACTERS
+              ? texts.space.eventForm.unsupportedCharacters
+              : t.nameMissing;
+        }
         if (field === 'priceAmount') next.priceAmount = t.priceMissing;
         if (field === 'quantityTotal') next.quantityTotal = t.quantityMissing;
       }

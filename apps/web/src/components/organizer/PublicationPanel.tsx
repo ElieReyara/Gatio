@@ -227,6 +227,12 @@ export function PublicationPanel({
         </button>
       )}
 
+      {/* Page publique visible (brouillon et événement suspendu : aucune page). */}
+      {(status === 'published' || status === 'postponed' || status === 'cancelled') && (
+        <Link className="link link--left" href={`/e/${event.slug}`}>
+          {texts.site.publicPage}
+        </Link>
+      )}
       {status !== 'cancelled' && (
         <>
           <Link className="link link--left" href={`/organisateur/evenements/${event.id}/infos`}>

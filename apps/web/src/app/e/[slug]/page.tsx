@@ -8,6 +8,7 @@ import { Icon } from '@/components/Icon';
 import { EventImage } from '@/components/public/EventImage';
 import { FunnelBeacon } from '@/components/public/FunnelBeacon';
 import { PublicCategoryCard } from '@/components/public/PublicCategoryCard';
+import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { ShareLink } from '@/components/public/ShareLink';
 import { formatDateTime } from '@/lib/format';
@@ -79,54 +80,57 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           </span>
         </div>
       )}
-      <EventImage url={event.imageUrl} height={180} />
-      <main className="page stack page--flush-top event-page">
-        <h1 className="display">{event.title}</h1>
-        <p className="lead">
-          <strong>{postponed ? t.dateTbc : formatDateTime(event.startsAt)}</strong>
-          <br />
-          {event.venue}, {event.city}
-          {!stopped && (
+      {/* Ordinateur : image, infos et partage à gauche, billets à droite (27/10/2026). */}
+      <main className="event-page">
+        <EventImage url={event.imageUrl} className="event-hero" />
+        <section className="event-info stack">
+          <h1 className="display">{event.title}</h1>
+          <p className="lead">
+            <strong>{postponed ? t.dateTbc : formatDateTime(event.startsAt)}</strong>
+            <br />
+            {event.venue}, {event.city}
+            {!stopped && (
+              <>
+                <br />
+                <span className="muted">{t.organizedBy(event.organizerName)}</span>
+              </>
+            )}
+          </p>
+          {!stopped && <Banner kind="info">{t.checkReal}</Banner>}
+          {!stopped && <p className="lead description">{event.description}</p>}
+        </section>
+        <section className="event-tickets stack" aria-labelledby="billets">
+          <h2 className="subtitle" id="billets">
+            {t.tickets}
+          </h2>
+          <div className="stack stack--tight">
+            {event.categories.map((category) => (
+              <PublicCategoryCard key={category.id} category={category} stopped={stopped} />
+            ))}
+          </div>
+          {stopped && (
             <>
-              <br />
-              <span className="muted">{t.organizedBy(event.organizerName)}</span>
+              <button type="button" className="button-primary" disabled>
+                {t.salesStopped}
+              </button>
+              <p className="fine-print fine-print--left">
+                {cancelled ? t.cancelledHint : t.postponedHint}
+              </p>
             </>
           )}
-        </p>
-        {!stopped && <Banner kind="info">{t.checkReal}</Banner>}
-        {!stopped && <p className="lead description">{event.description}</p>}
-        <h2 className="subtitle">{t.tickets}</h2>
-        <div className="stack stack--tight">
-          {event.categories.map((category) => (
-            <PublicCategoryCard key={category.id} category={category} stopped={stopped} />
-          ))}
-        </div>
-        {stopped && (
-          <>
-            <button type="button" className="button-primary" disabled>
-              {t.salesStopped}
-            </button>
-            <p className="fine-print fine-print--left">
-              {cancelled ? t.cancelledHint : t.postponedHint}
-            </p>
-          </>
+          {onSale && (
+            <Link className="button-primary button-link" href={`/e/${event.slug}/billets`}>
+              {texts.checkout.choose}
+            </Link>
+          )}
+        </section>
+        {!stopped && (
+          <div className="event-share">
+            <ShareLink title={event.title} url={url} />
+          </div>
         )}
-        {onSale && (
-          <Link className="button-primary button-link" href={`/e/${event.slug}/billets`}>
-            {texts.checkout.choose}
-          </Link>
-        )}
-        {!stopped && <ShareLink title={event.title} url={url} />}
       </main>
-      <footer className="public-footer">
-        <Link className="link" href="/mes-billets">
-          {t.findTickets}
-        </Link>
-        <span className="fine-print fine-print--left">{t.problem}</span>
-        <Link className="link link--tight" href={`/support?evenement=${event.slug}`}>
-          {t.contactSupport}
-        </Link>
-      </footer>
+      <PublicFooter eventSlug={event.slug} />
       <FunnelBeacon type="event_view" eventSlug={event.slug} />
     </>
   );

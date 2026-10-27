@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
-import { BackHeader } from '@/components/public/BackHeader';
 import { PhoneLogin } from '@/components/public/PhoneLogin';
+import { PublicFooter } from '@/components/public/PublicFooter';
+import { PublicHeader } from '@/components/public/PublicHeader';
 import { getJson, postJson } from '@/lib/api-client';
 import { downloadMyTicketPdf } from '@/lib/buyer-storage';
 import { formatDateTime } from '@/lib/format';
@@ -56,8 +57,9 @@ export function MyTickets() {
 
   return (
     <>
-      <BackHeader title={t.title} />
-      <main className="page page--flush-top stack">
+      <PublicHeader current="tickets" />
+      <main className="page page--card stack">
+        <h1 className="title title--flush">{t.title}</h1>
         {state.kind === 'loading' && (
           <div className="stack" role="status" aria-label={t.loading}>
             <div className="skeleton skeleton--line" />
@@ -76,18 +78,25 @@ export function MyTickets() {
             <button type="button" className="button-secondary" onClick={() => void logout()}>
               {t.otherPhone}
             </button>
+            <Link className="link" href="/">
+              {texts.site.toEvents}
+            </Link>
           </div>
         )}
         {state.kind === 'ready' && state.items.length > 0 && (
           <>
             <Group label={t.upcoming} items={state.items.filter((item) => !item.past)} />
             <Group label={t.past} items={state.items.filter((item) => item.past)} />
+            <Link className="button-secondary button-link" href="/">
+              {texts.site.toEvents}
+            </Link>
             <button type="button" className="link link-button" onClick={() => void logout()}>
               {t.logout}
             </button>
           </>
         )}
       </main>
+      <PublicFooter onMyTickets />
     </>
   );
 }

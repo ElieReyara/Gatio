@@ -756,12 +756,16 @@ body {
 }
 
 /* Pages acheteur (maquettes B1 et B2). */
-.public-header {
-  padding: var(--space-3) var(--space-4);
+.public-home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  text-decoration: none;
 }
 
-.public-home {
-  text-decoration: none;
+/* Écrans d'accès organisateur : le logo garde sa largeur dans la colonne. */
+.page--form > .public-home {
+  align-self: flex-start;
 }
 
 .event-cover {
@@ -948,17 +952,6 @@ body {
   color: var(--ink);
 }
 
-.public-footer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-4);
-}
-
-.public-footer .link {
-  text-align: left;
-}
-
 .contact-option {
   display: flex;
   align-items: center;
@@ -996,10 +989,6 @@ body {
 
 .description {
   white-space: pre-line;
-}
-
-.event-page {
-  padding-top: var(--space-4);
 }
 
 .status-banner--rounded {
@@ -1316,4 +1305,315 @@ button.shell-back {
 
 .nowrap {
   white-space: nowrap;
+}
+
+/* Mise en page commune et ordinateur (demande du responsable, 27/10/2026, sans maquette).
+   Le téléphone garde les maquettes ; au-delà de 900 px, en-tête et pied sur toute la
+   largeur, contenus alignés sur une même colonne de 1 120 px. */
+.site-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header-inner,
+.site-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 64px;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  margin-right: calc(-1 * var(--space-3));
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current='page'] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.site-nav .site-nav-wide {
+  display: none;
+}
+
+.site-header + .page {
+  padding-top: var(--space-6);
+}
+
+.site-footer {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--line);
+}
+
+.site-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block: var(--space-4) var(--space-8);
+}
+
+.site-footer-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Zone tactile de 48 px pour chaque lien du pied. */
+.site-footer .link {
+  padding: var(--space-3) 0;
+}
+
+.event-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.event-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: var(--space-8);
+}
+
+.event-page > :not(.event-hero) {
+  padding: 0 var(--space-4);
+}
+
+.event-hero {
+  height: 180px;
+}
+
+/* Code SMS (B6) : vérification automatique au sixième chiffre, sans bouton. */
+.code-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.shell-nav .shell-nav-logo {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .page--list {
+    max-width: 1120px;
+  }
+
+  .event-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .site-header-inner,
+  .site-footer-inner {
+    padding: 0 var(--space-6);
+  }
+
+  .site-nav .site-nav-wide {
+    display: inline-flex;
+  }
+
+  /* Liens du pied alignés sur une même ligne, sous leur question éventuelle. */
+  .site-footer-inner {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: var(--space-12);
+    padding-block: var(--space-6) var(--space-8);
+  }
+
+  .page--list,
+  .site-header + .page--list {
+    padding: var(--space-8) var(--space-6) var(--space-12);
+  }
+
+  .page--list > .filters {
+    max-width: 560px;
+  }
+
+  .page--list > .button-link {
+    align-self: center;
+    width: auto;
+    min-width: 320px;
+  }
+
+  /* Formulaires et parcours (B3 à B9, support, accès organisateur) : carte centrée. */
+  .page--card,
+  .site-header + .page--card {
+    max-width: 560px;
+    margin: var(--space-8) auto var(--space-12);
+    padding: var(--space-8);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .public-back {
+    max-width: 560px;
+    margin-top: var(--space-6);
+    padding: 0;
+  }
+
+  .public-back + .page--card {
+    margin-top: var(--space-2);
+  }
+
+  /* Page d'un événement : image, infos et partage à gauche ; billets à droite, toujours
+     visibles pendant la lecture. */
+  .event-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'hero tickets'
+      'info tickets'
+      'share tickets';
+    gap: var(--space-6) var(--space-8);
+    max-width: 1120px;
+    padding: var(--space-8) var(--space-6) var(--space-12);
+  }
+
+  .event-page > :not(.event-hero) {
+    padding: 0;
+  }
+
+  .event-hero {
+    grid-area: hero;
+    height: auto;
+    aspect-ratio: 2 / 1;
+    border-radius: var(--radius-lg);
+  }
+
+  .event-info {
+    grid-area: info;
+  }
+
+  .event-share {
+    grid-area: share;
+    max-width: 480px;
+  }
+
+  /* Bloc plus haut que l'écran (beaucoup de catégories) : il défile, le bouton reste atteignable. */
+  .event-page > .event-tickets {
+    grid-area: tickets;
+    position: sticky;
+    top: var(--space-6);
+    align-self: start;
+    max-height: calc(100vh - var(--space-12));
+    overflow-y: auto;
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  /* Bandeau annulé ou reporté : texte aligné sur la colonne de la page. */
+  .status-banner:not(.status-banner--rounded) {
+    padding-inline: max(var(--space-6), calc((100% - 1120px) / 2 + var(--space-6)));
+  }
+
+  /* Espace organisateur : la barre du bas devient un menu à gauche. */
+  .shell--nav {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 720px);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'nav top'
+      'nav tabs'
+      'nav body';
+    column-gap: var(--space-8);
+    justify-content: center;
+    max-width: 1120px;
+    padding: 0 var(--space-6);
+  }
+
+  .shell--nav > .shell-top {
+    grid-area: top;
+    padding-top: var(--space-6);
+    color: var(--ink);
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .shell--nav > .tabs {
+    grid-area: tabs;
+  }
+
+  .shell--nav > .shell-body {
+    grid-area: body;
+  }
+
+  .shell--nav > .shell-nav {
+    grid-area: nav;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-6) 0;
+    border-top: 0;
+    background: none;
+  }
+
+  .shell--nav .shell-nav a {
+    flex: none;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    line-height: 24px;
+    text-align: left;
+  }
+
+  .shell--nav .shell-nav a.is-active {
+    background: var(--surface);
+  }
+
+  .shell--nav .shell-nav .shell-nav-logo {
+    display: block;
+    margin-bottom: var(--space-4);
+    padding: var(--space-1) var(--space-4);
+  }
+
+  /* Fenêtre de confirmation au centre de l'écran plutôt qu'en bas. */
+  .sheet {
+    top: 50%;
+    bottom: auto;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: var(--radius-lg);
+    transform: translateY(-50%);
+  }
+}
+
+@media (min-width: 1024px) {
+  .event-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
 }

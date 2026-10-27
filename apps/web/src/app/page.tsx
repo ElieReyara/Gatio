@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
 import { EventImage } from '@/components/public/EventImage';
+import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { getPublic } from '@/lib/public-api';
@@ -52,8 +53,8 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <PublicHeader />
-      <main className="page stack page--flush-top">
+      <PublicHeader current="events" />
+      <main className="page page--list stack">
         <h1 className="title title--flush">{t.listTitle}</h1>
         <form className="filters" method="get" action="/">
           <select name="ville" defaultValue={city ?? ''} aria-label={texts.space.eventForm.city}>
@@ -104,21 +105,23 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
             </Link>
           </div>
         ) : (
-          items.map((event) => (
-            <Link key={event.slug} className="event-card" href={`/e/${event.slug}`}>
-              <EventImage url={event.imageUrl} height={140} />
-              <span className="event-card-text">
-                <span className="event-card-title">{event.title}</span>
-                <span>{formatDateTime(event.startsAt)}</span>
-                <span className="muted">
-                  {event.venue}, {event.city}
+          <div className="event-grid">
+            {items.map((event) => (
+              <Link key={event.slug} className="event-card" href={`/e/${event.slug}`}>
+                <EventImage url={event.imageUrl} height={140} />
+                <span className="event-card-text">
+                  <span className="event-card-title">{event.title}</span>
+                  <span>{formatDateTime(event.startsAt)}</span>
+                  <span className="muted">
+                    {event.venue}, {event.city}
+                  </span>
+                  {event.minPriceAmount !== null && (
+                    <strong>{t.from(formatMoney(event.minPriceAmount))}</strong>
+                  )}
                 </span>
-                {event.minPriceAmount !== null && (
-                  <strong>{t.from(formatMoney(event.minPriceAmount))}</strong>
-                )}
-              </span>
-            </Link>
-          ))
+              </Link>
+            ))}
+          </div>
         )}
         {result?.nextCursor && (
           <Link className="button-secondary button-link" href={moreHref()}>
@@ -126,12 +129,7 @@ export default async function EventListPage({ searchParams }: { searchParams: Pr
           </Link>
         )}
       </main>
-      <footer className="public-footer">
-        <span className="fine-print fine-print--left">{t.organizerPrompt}</span>
-        <Link className="link link--tight" href="/organisateur">
-          {t.organizerLink}
-        </Link>
-      </footer>
+      <PublicFooter />
     </>
   );
 }

@@ -29,7 +29,7 @@ export default async function TicketsPage({ params }: { params: Promise<{ slug: 
   return (
     <>
       <BackHeader title={event.title} backHref={`/e/${event.slug}`} />
-      <main className="page page--flush-top">
+      <main className="page page--card page--flush-top">
         <Checkout event={event} phoneVerification={event.phoneVerification} />
       </main>
       <FunnelBeacon type="checkout_started" eventSlug={event.slug} />

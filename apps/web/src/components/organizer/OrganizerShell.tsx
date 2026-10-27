@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Logo } from '@/components/Logo';
 import { texts } from '@/texts/fr';
 
 // Gabarit des écrans organisateur (maquettes O2 à O5) : barre du haut (avec retour),
-// onglets d'un événement, contenu, barre de navigation du bas.
+// onglets d'un événement, contenu, barre de navigation du bas. Sur ordinateur, la barre du
+// bas devient un menu à gauche, avec le logo qui ramène au site (27/10/2026).
 type Section = 'events' | 'payouts' | 'profile';
 
 const sections: Array<{ key: Section; href: string }> = [
@@ -26,7 +28,7 @@ export function OrganizerShell({
   children: ReactNode;
 }) {
   return (
-    <div className="shell">
+    <div className={section ? 'shell shell--nav' : 'shell'}>
       <header className="shell-top">
         {backHref && (
           <Link className="shell-back" href={backHref} aria-label={texts.space.back}>
@@ -50,7 +52,10 @@ export function OrganizerShell({
       {tabs}
       <main className="shell-body stack">{children}</main>
       {section && (
-        <nav className="shell-nav">
+        <nav className="shell-nav" aria-label={texts.site.nav}>
+          <Link className="shell-nav-logo" href="/" aria-label={texts.site.home}>
+            <Logo />
+          </Link>
           {sections.map(({ key, href }) => (
             <Link
               key={key}

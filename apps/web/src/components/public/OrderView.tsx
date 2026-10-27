@@ -12,6 +12,8 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
 import { BackHeader } from '@/components/public/BackHeader';
+import { PublicFooter } from '@/components/public/PublicFooter';
+import { PublicHeader } from '@/components/public/PublicHeader';
 import { getJson, postJson } from '@/lib/api-client';
 import {
   clearLinkParams,
@@ -152,9 +154,11 @@ export function OrderView({ orderId }: { orderId: string }) {
     setBusy(false);
   }
 
+  // Chargement : ni l'en-tête de paiement ni l'en-tête commun, pour ne pas sauter de l'un
+  // à l'autre une fois l'état de la commande connu.
   if (state.kind === 'loading') {
     return (
-      <Frame title={t.title}>
+      <Frame bare>
         <p className="lead" role="status">
           {t.loading}
         </p>
@@ -163,7 +167,7 @@ export function OrderView({ orderId }: { orderId: string }) {
   }
   if (state.kind !== 'ready') {
     return (
-      <Frame title={t.title}>
+      <Frame site>
         <Banner kind="error">
           {state.kind === 'missing' ? (
             <>
@@ -186,14 +190,14 @@ export function OrderView({ orderId }: { orderId: string }) {
 
   if (order.status === 'paid') {
     return (
-      <Frame title={texts.app.name}>
+      <Frame site>
         <Tickets order={order} orderId={orderId} initialIndex={initialTicket} />
       </Frame>
     );
   }
   if (order.status === 'needs_review') {
     return (
-      <Frame title={texts.app.name}>
+      <Frame site>
         <div className="timer" role="status">
           <Icon name="clock" />
           <span>
@@ -220,7 +224,7 @@ export function OrderView({ orderId }: { orderId: string }) {
     order.status === 'expired' || (order.status === 'pending' && seconds === 0 && !paymentPending);
   if (expired || order.status !== 'pending') {
     return (
-      <Frame title={t.title}>
+      <Frame site>
         {expired ? (
           <Banner kind="error">
             <strong>{t.expired}</strong> {t.expiredText}
@@ -247,7 +251,7 @@ export function OrderView({ orderId }: { orderId: string }) {
 
   if (paymentPending && (!choosing || seconds === 0)) {
     return (
-      <Frame title={t.title}>
+      <Frame>
         <div className="stack center">
           <span className="round-icon">
             <Icon name="phone" size={48} />
@@ -309,7 +313,7 @@ export function OrderView({ orderId }: { orderId: string }) {
   }
 
   return (
-    <Frame title={t.title}>
+    <Frame>
       <Timer seconds={seconds} />
       <Recap order={order} />
       {failure && <Banner kind="error">{failure}</Banner>}
@@ -465,6 +469,9 @@ function Tickets({
         {order.ticketEmail === 'sent' ? `${t.emailSent(count)} ` : ''}
         {t.showAtEntry}
       </p>
+      <Link className="link" href="/mes-billets">
+        {texts.site.allTickets}
+      </Link>
     </>
   );
 }
@@ -502,11 +509,33 @@ function Recap({ order }: { order: Order }) {
   );
 }
 
-function Frame({ title, children }: { title: string; children: ReactNode }) {
+// Paiement en cours : en-tête de retour seul, pour ne pas quitter la réservation. Autres
+// états (billets, commande introuvable, expirée) : en-tête et pied communs (27/10/2026).
+function Frame({
+  title = t.title,
+  site = false,
+  bare = false,
+  children,
+}: {
+  title?: string;
+  site?: boolean;
+  bare?: boolean;
+  children: ReactNode;
+}) {
+  if (bare) return <main className="page page--card stack">{children}</main>;
+  if (site) {
+    return (
+      <>
+        <PublicHeader />
+        <main className="page page--card stack">{children}</main>
+        <PublicFooter />
+      </>
+    );
+  }
   return (
     <>
       <BackHeader title={title} />
-      <main className="page page--flush-top stack">{children}</main>
+      <main className="page page--card page--flush-top stack">{children}</main>
     </>
   );
 }

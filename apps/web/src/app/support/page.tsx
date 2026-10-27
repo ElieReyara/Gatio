@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Banner } from '@/components/Banner';
 import { Icon } from '@/components/Icon';
+import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { getPublic } from '@/lib/public-api';
 import { siteUrl, supportContacts } from '@/lib/site';
@@ -36,7 +37,7 @@ export default async function SupportPage({
   return (
     <>
       <PublicHeader />
-      <main className="page stack page--flush-top">
+      <main className="page page--card stack">
         <h1 className="title title--flush">{t.title}</h1>
         <p className="lead">{event ? t.aboutEvent(event.title) : t.general}</p>
         {whatsapp && (
@@ -70,6 +71,7 @@ export default async function SupportPage({
           {event ? t.backToEvent : t.toEvents}
         </Link>
       </main>
+      <PublicFooter />
     </>
   );
 }

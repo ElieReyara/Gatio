@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Banner } from '@/components/Banner';
-import { BackHeader } from '@/components/public/BackHeader';
+import { PublicFooter } from '@/components/public/PublicFooter';
+import { PublicHeader } from '@/components/public/PublicHeader';
 import { postJson } from '@/lib/api-client';
 import { clearLinkParams, readLinkParams } from '@/lib/buyer-storage';
 import { texts } from '@/texts/fr';
@@ -33,8 +34,8 @@ export function EmailConfirm() {
 
   return (
     <>
-      <BackHeader title={texts.app.name} />
-      <main className="page page--flush-top stack">
+      <PublicHeader />
+      <main className="page page--card stack">
         {state === 'checking' && (
           <p className="lead" role="status">
             {t.checking}
@@ -64,6 +65,7 @@ export function EmailConfirm() {
         )}
         {state === 'error' && <Banner kind="error">{t.unavailable}</Banner>}
       </main>
+      <PublicFooter />
     </>
   );
 }

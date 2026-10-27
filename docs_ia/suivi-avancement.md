@@ -19,7 +19,8 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | 5 | Réserver des billets | Haute | 4 | 100 achats simultanés → 1 gagnant ; expiration ; idempotence ; période ; double saisie ; annulation concurrente | PC-5 ✔ | terminé (24/10/2026 ; essai de l'expiration reporté) |
 | 6 | Payer et recevoir le billet (faux prestataire) | Haute | 5, 1 | Cas R13–R18 testés ; aucun billet avant confirmation | PC-6 ✔ | terminé (26/10/2026) |
 | 7 | Billet téléchargeable et email | Haute | 6 | PDF scannable ; email dans Mailpit ; email rattaché après validation | PC-7 ✔ | terminé (27/10/2026) |
-| 8 | Reconnexion par SMS et « mes billets » | Moyenne | 7 | Billets retrouvés par code ; pas d'accès aux billets d'autrui ; réponse identique | PC-8 | en attente de contrôle (construite le 27/10/2026) |
+| 8 | Reconnexion par SMS et « mes billets » | Moyenne | 7 | Billets retrouvés par code ; pas d'accès aux billets d'autrui ; réponse identique | PC-8 (essai A ✔) | terminé (27/10/2026 ; premier vrai SMS et D1 reportés) |
+| 8b | Affichage sur ordinateur et circulation (demande du responsable au PC-8) | Haute | 8 | Mise en page ordinateur sans changer le téléphone ; en-tête et pied communs ; code vérifié sans bouton | PC-8b | en attente de contrôle (construit le 27/10/2026) |
 | 9 | Contrôleurs invités | Haute | 3 | Lien révoqué ou expiré refusé, sessions coupées | (PC-10) | à faire |
 | 10 | Scan complet et synchronisation | Haute | 6, 9, 1 | Grille manuelle iPhone + Android réussie | PC-10 | à faire |
 | 11 | Portes et affectation (facultatif) | Basse | 10 | Sans affectation, rien ne change | PC-11 | à faire |
@@ -48,6 +49,7 @@ données personnelles · opération irréversible · envoi vers l'extérieur.
 | PC-6 | Tranche 6, fin | Cycle de paiement, transaction de confirmation | Paiement |
 | PC-7 | Tranche 7, fin | PDF imprimé en noir et blanc, emails | Seul le responsable peut juger ; données personnelles |
 | PC-8 | Tranche 8, avant le premier vrai SMS puis fin | Envoi par passerelle Android ; accès aux billets | Envoi vers l'extérieur ; sécurité |
+| PC-8b | Lot 8b, fin | Affichage sur ordinateur, navigation, écran du code | Seul le responsable peut juger (écrans sans maquette) |
 | PC-10 | Tranche 10, fin (inclut la tranche 9) | Grille manuelle sur vrais téléphones ; jetons d'invitation et de scan | Seul le responsable peut juger ; sécurité |
 | PC-11 | Avant la tranche 11 | Construire ou non la tranche facultative | Seul le responsable peut juger |
 | PC-12 | Tranche 12, fin | Export CSV des acheteurs | Données personnelles |

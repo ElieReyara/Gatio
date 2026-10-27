@@ -99,7 +99,7 @@ export function Checkout({
     await place(parsed.data, key);
   }
 
-  async function place(data: OrderCreate, key: string) {
+  async function place(data: OrderCreate, key: string, afterCode = false) {
     setBusy(true);
     setFailure(null);
     const result = await postJson<OrderCreated>('/orders', data, { 'idempotency-key': key });
@@ -109,9 +109,14 @@ export function Checkout({
       return;
     }
     setBusy(false);
+    // L'écran du code reste affiché jusqu'à la réponse ; une erreur ramène au formulaire.
+    setVerifying(null);
     const details = (result.error?.details ?? {}) as Record<string, unknown>;
     if (result.status === 401 && details.reason === PHONE_VERIFICATION_REQUIRED) {
-      setVerifying({ data, key });
+      // Code redemandé juste après l'avoir validé (session non gardée par le navigateur) :
+      // pas de nouveau SMS en boucle, retour au formulaire avec un message.
+      if (afterCode) setFailure(t.unavailable);
+      else setVerifying({ data, key });
       return;
     }
     switch (result.error?.code) {
@@ -147,11 +152,8 @@ export function Checkout({
     return (
       <PhoneLogin
         phone={verifying.data.contact.phone}
-        onVerified={() => {
-          const pending = verifying;
-          setVerifying(null);
-          void place(pending.data, pending.key);
-        }}
+        verifiedNext={`${t.busy} ${t.busyNote}`}
+        onVerified={() => void place(verifying.data, verifying.key, true)}
         onChangePhone={() => setVerifying(null)}
       />
     );

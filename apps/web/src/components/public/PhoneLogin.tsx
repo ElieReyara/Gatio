@@ -7,6 +7,8 @@ import { Banner } from '@/components/Banner';
 import { Field } from '@/components/form/Field';
 import { Icon } from '@/components/Icon';
 import { CodeInput } from '@/components/public/CodeInput';
+import { PublicFooter } from '@/components/public/PublicFooter';
+import { PublicHeader } from '@/components/public/PublicHeader';
 import { postJson } from '@/lib/api-client';
 import { formatPhone } from '@/lib/format';
 import { texts } from '@/texts/fr';
@@ -19,12 +21,15 @@ type Step = 'phone' | 'code' | 'locked';
 export function PhoneLogin({
   phone: presetPhone,
   withHeader = false,
+  verifiedNext,
   onVerified,
   onChangePhone,
 }: {
   // Numéro déjà saisi (parcours B3) : le code est demandé dès l'affichage.
   phone?: string;
   withHeader?: boolean;
+  // Ce qui suit le code validé (« Réservation en cours… »), affiché jusqu'à l'écran suivant.
+  verifiedNext?: string;
   onVerified: () => void;
   onChangePhone?: () => void;
 }) {
@@ -32,7 +37,11 @@ export function PhoneLogin({
   const [phone, setPhone] = useState(presetPhone ?? '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  // Envoi du code (busy) et vérification (checking) sont distincts : seule la vérification
+  // remplace les commandes de l'écran par son état (revue du lot 8b).
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [verified, setVerified] = useState(false);
   const [wrong, setWrong] = useState<{ attemptsLeft: number | null } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [resendAt, setResendAt] = useState(0);
@@ -87,15 +96,16 @@ export function PhoneLogin({
   }
 
   async function verify(value: string) {
-    if (busy || value.length !== 6) return;
-    setBusy(true);
+    if (checking || verified || value.length !== 6) return;
+    setChecking(true);
     setFailure(null);
     const result = await postJson('/auth/buyer/otp/verify', { phone, code: value });
+    setChecking(false);
     if (result.ok) {
+      setVerified(true);
       onVerified();
       return;
     }
-    setBusy(false);
     const details = result.error?.details ?? {};
     if (result.status === 429 && details.reason === OTP_LOCKED) setStep('locked');
     else if (result.error?.code === 'TOKEN_INVALID') {
@@ -106,10 +116,12 @@ export function PhoneLogin({
   }
 
   function changeCode(value: string) {
+    if (verified) return;
     setCode(value);
     if (wrong) setWrong(null);
-    // Code complet (collé ou proposé par le téléphone) : vérifié tout de suite.
-    if (value.length === 6 && !busy) void verify(value);
+    // Code complet (tapé, collé ou proposé par le téléphone) : vérifié tout de suite, sans
+    // bouton à appuyer (retour du responsable au PC-8).
+    if (value.length === 6) void verify(value);
   }
 
   function changePhone() {
@@ -125,35 +137,14 @@ export function PhoneLogin({
   }
 
   const seconds = Math.max(0, Math.ceil((resendAt - now) / 1000));
-  const frame = (title: string, content: ReactNode, back?: () => void) =>
+  // « Mes billets » : en-tête et pied communs (27/10/2026) ; « Changer de numéro » sert de
+  // retour. Parcours d'achat : le cadre est celui de la réservation.
+  const frame = (content: ReactNode) =>
     withHeader ? (
       <>
-        <header className="shell-top public-back">
-          {back && (
-            <button
-              type="button"
-              className="shell-back"
-              aria-label={texts.space.back}
-              onClick={back}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M15 5l-7 7 7 7" />
-              </svg>
-            </button>
-          )}
-          <span>{title}</span>
-        </header>
-        <main className="page page--flush-top">{content}</main>
+        <PublicHeader current="tickets" />
+        <main className="page page--card">{content}</main>
+        <PublicFooter onMyTickets />
       </>
     ) : (
       content
@@ -161,7 +152,6 @@ export function PhoneLogin({
 
   if (step === 'locked') {
     return frame(
-      texts.app.name,
       <div className="stack">
         <div className="banner banner--info" role="alert">
           <Icon name="clock" strokeWidth={2.4} />
@@ -185,7 +175,6 @@ export function PhoneLogin({
 
   if (step === 'phone') {
     return frame(
-      texts.app.name,
       <form className="stack" onSubmit={submitPhone} noValidate>
         <h1 className="title title--flush">{t.title}</h1>
         <p className="lead">{t.intro}</p>
@@ -213,12 +202,17 @@ export function PhoneLogin({
     );
   }
 
+  // Pendant et après la vérification, plus de bouton « Valider » : seulement l'état du code.
+  const done = checking || verified;
   return frame(
-    t.codeTop,
     <form
       className="stack"
       onSubmit={(event) => {
         event.preventDefault();
+        // Touche « OK » du clavier après un refus : le même code faux ne consomme pas un essai.
+        if (wrong) return;
+        // Le bouton « Valider » disparaît : le focus revient au champ du code.
+        event.currentTarget.querySelector('input')?.focus();
         void verify(code);
       }}
       noValidate
@@ -251,30 +245,62 @@ export function PhoneLogin({
         onChange={changeCode}
         error={wrong !== null}
         describedBy={wrong ? errorId : undefined}
-        busy={busy}
+        busy={done}
         autoFocus
       />
-      <button type="submit" className="button-primary" disabled={busy || code.length !== 6}>
-        {busy && code.length === 6 ? t.verifying : t.verify}
-      </button>
-      {seconds > 0 ? (
-        <p className="fine-print" role="status">
-          {t.resendIn(`0:${String(seconds).padStart(2, '0')}`)}
-        </p>
-      ) : (
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={busy}
-          onClick={() => void requestCode(phone)}
-        >
-          {t.resend}
+      {/* Une seule zone annoncée : l'état du code (bandeau sans rôle propre). */}
+      <div aria-live="polite">
+        {checking && (
+          <p className="code-status">
+            <Icon name="clock" size={20} />
+            {t.verifying}
+          </p>
+        )}
+        {verified && (
+          <div className="banner banner--success">
+            <span className="banner-icon banner-icon--success">
+              <Icon name="check" size={16} strokeWidth={3} />
+            </span>
+            <span>
+              <strong>{t.verified}</strong>
+              {verifiedNext && <> {verifiedNext}</>}
+            </span>
+          </div>
+        )}
+      </div>
+      {!done && (
+        <>
+          {/* Le bouton ne sert qu'à réessayer un code complet après une panne. */}
+          {failure && code.length === 6 ? (
+            <button type="submit" className="button-primary">
+              {t.verify}
+            </button>
+          ) : (
+            <p className="fine-print">{t.autoCheck}</p>
+          )}
+          {seconds > 0 ? (
+            <p className="fine-print" role="status">
+              {t.resendIn(`0:${String(seconds).padStart(2, '0')}`)}
+            </p>
+          ) : (
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => {
+                if (!busy) void requestCode(phone);
+              }}
+            >
+              {busy ? t.sending : t.resend}
+            </button>
+          )}
+        </>
+      )}
+      {/* Toujours possible tant que le code n'est pas validé (réseau qui ne répond plus). */}
+      {!verified && (
+        <button type="button" className="link link-button" onClick={changePhone}>
+          {t.changePhone}
         </button>
       )}
-      <button type="button" className="link link-button" onClick={changePhone}>
-        {t.changePhone}
-      </button>
     </form>,
-    changePhone,
   );
 }

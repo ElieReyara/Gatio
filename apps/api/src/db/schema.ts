@@ -76,6 +76,7 @@ export const authSessions = pgTable(
   (table) => [
     check('auth_sessions_one_owner', sql`num_nonnulls(${table.userId}, ${table.buyerId}) = 1`),
     index('auth_sessions_user_id_idx').on(table.userId),
+    index('auth_sessions_buyer_id_idx').on(table.buyerId),
   ],
 );
 
@@ -288,6 +289,9 @@ export const orders = pgTable(
     idempotencyScope: text('idempotency_scope').notNull(),
     reservationExpiresAt: timestamp('reservation_expires_at', { withTimezone: true }).notNull(),
     paidAt: timestamp('paid_at', { withTimezone: true }),
+    // Commande passée par un téléphone qui a prouvé posséder le numéro (code SMS) : seul
+    // son email peut être rattaché au compte (journal de bord n° 73).
+    phoneVerified: boolean('phone_verified').notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -524,6 +528,25 @@ export const tickets = pgTable(
     index('tickets_event_updated_idx').on(table.eventId, table.updatedAt),
     index('tickets_buyer_id_idx').on(table.buyerId),
     index('tickets_order_id_idx').on(table.orderId),
+  ],
+);
+
+// R31 : code de connexion de l'acheteur, haché avec un secret serveur ; 5 minutes, 5 essais.
+export const otpCodes = pgTable(
+  'otp_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    phoneE164: text('phone_e164').notNull(),
+    codeHash: text('code_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    ip: inet('ip'),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check('otp_codes_attempts', sql`${table.attempts} between 0 and 5`),
+    index('otp_codes_phone_created_idx').on(table.phoneE164, table.createdAt),
   ],
 );
 

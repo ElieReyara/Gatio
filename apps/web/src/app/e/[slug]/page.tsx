@@ -119,6 +119,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         {!stopped && <ShareLink title={event.title} url={url} />}
       </main>
       <footer className="public-footer">
+        <Link className="link" href="/mes-billets">
+          {t.findTickets}
+        </Link>
         <span className="fine-print fine-print--left">{t.problem}</span>
         <Link className="link link--tight" href={`/support?evenement=${event.slug}`}>
           {t.contactSupport}

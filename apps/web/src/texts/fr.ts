@@ -360,6 +360,8 @@ export const texts = {
     dateTbc: 'Date à confirmer',
     problem: 'Un problème avec cet événement ?',
     contactSupport: 'Contacter le support',
+    // Pied de la maquette B2.
+    findTickets: 'Retrouver mes billets',
     more: 'Voir plus d’événements',
     // Ajouts demandés par le responsable le 23/10/2026 (aucune maquette) : partage du lien
     // depuis la page d'un événement, accès à l'espace organisateur depuis l'accueil.
@@ -385,6 +387,8 @@ export const texts = {
     namePlaceholder: 'Votre nom et prénom',
     phone: 'Votre numéro de téléphone',
     phoneHelp: 'Votre billet sera lié à ce numéro.',
+    // Vérification du numéro active (journal de bord n° 71) : la double saisie disparaît.
+    phoneVerifiedHelp: 'Votre billet sera lié à ce numéro. Nous vous enverrons un code par SMS.',
     // Double saisie du numéro (journal de bord n° 55, document 07) : absente de la maquette B3.
     phoneConfirm: 'Confirmez votre numéro',
     phoneConfirmHelp: 'Tapez-le une seconde fois, sans copier-coller.',
@@ -474,6 +478,66 @@ export const texts = {
     loading: 'Chargement de votre commande…',
     closed: 'Cette commande n’est plus en attente de paiement.',
   },
+  // Connexion par code (maquette B6) et SMS du code (M1, côté API).
+  buyerLogin: {
+    title: 'Retrouvez vos billets',
+    intro: 'Entrez le numéro utilisé pour l’achat. Nous vous envoyons un code par SMS.',
+    phone: 'Votre numéro de téléphone',
+    phonePlaceholder: '+235 66 12 34 56',
+    phoneInvalid:
+      'Ce numéro n’est pas accepté. Gatio accepte pour l’instant les numéros du Tchad (+235).',
+    send: 'Recevoir le code',
+    sending: 'Envoi du code…',
+    noPassword: 'Aucun mot de passe à retenir.',
+    codeTop: 'Code reçu',
+    codeTitle: 'Entrez le code',
+    sentTo: 'Nous l’avons envoyé au',
+    validity: 'Il est valable 5 minutes.',
+    // Avant la réservation (parcours B3) : le code prouve que le numéro est le vôtre.
+    checkoutIntro: 'Pour réserver, confirmez que ce numéro est bien le vôtre.',
+    code: 'Code à 6 chiffres',
+    verify: 'Valider',
+    verifying: 'Vérification…',
+    resendIn: (time: string) => `Vous pouvez renvoyer le code dans ${time}.`,
+    resend: 'Renvoyer le code',
+    changePhone: 'Changer de numéro',
+    wrongStrong: 'Ce code est incorrect ou expiré.',
+    attemptsLeft: (count: number) =>
+      count > 1 ? `Il vous reste ${count} essais.` : 'Il vous reste 1 essai.',
+    lockedStrong: 'Trop d’essais.',
+    lockedText: 'Pour protéger vos billets, réessayez dans 15 minutes.',
+    lockedHelp:
+      'Vous avez acheté un billet récemment ? Utilisez le lien reçu par email ou ouvrez la page du billet depuis votre navigateur.',
+    tooManyCodes: 'Trop de codes demandés. Réessayez plus tard.',
+    contactSupport: 'Contacter le support',
+    unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
+  },
+  // Mes billets (maquette B7).
+  myTickets: {
+    title: 'Mes billets',
+    loading: 'Chargement des billets',
+    upcoming: 'À VENIR',
+    past: 'PASSÉS',
+    line: (quantity: number, category: string) =>
+      `${category} · ${quantity} billet${quantity > 1 ? 's' : ''}`,
+    view: 'Voir',
+    viewOrder: (reference: string) => `Voir la commande ${reference}`,
+    download: (index: number) => `Télécharger le billet ${index}`,
+    downloading: 'Téléchargement…',
+    downloadFailed: 'Le billet n’a pas pu être téléchargé. Réessayez.',
+    cancelled: 'Événement annulé',
+    cancelledText: 'Contactez l’organisateur pour un remboursement.',
+    postponed: 'Reporté · Date à confirmer',
+    postponedText: 'Votre billet reste valable pour la nouvelle date.',
+    voidTicket: 'Billet annulé',
+    voidText: 'Ce billet ne sera plus accepté à l’entrée.',
+    contactSupport: 'Contacter le support',
+    emptyTitle: 'Aucun billet pour ce numéro',
+    emptyText: 'Vérifiez le numéro utilisé lors de l’achat.',
+    otherPhone: 'Essayer un autre numéro',
+    logout: 'Me déconnecter',
+    unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
+  },
   // Validation de l'email (maquette B9).
   emailConfirm: {
     checking: 'Vérification du lien…',
@@ -483,8 +547,7 @@ export const texts = {
     invalidText: 'Il a expiré ou a déjà été utilisé.',
     stillValid: 'Votre billet reste valable. Vous n’avez rien à refaire.',
     unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
-    // « Voir mes billets » (B9) : la page « Mes billets » arrive en tranche 8.
-    toEvents: 'Voir les événements',
+    toMyTickets: 'Voir mes billets',
   },
   // Outil d'essai du faux prestataire (développement seulement, tranche 6).
   fakeOperator: {

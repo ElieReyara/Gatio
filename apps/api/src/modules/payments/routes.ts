@@ -14,7 +14,7 @@ import { events, orders, paymentWebhookEvents, payments } from '../../db/schema.
 import { AppError } from '../../lib/errors.js';
 import { limits } from '../../lib/limits.js';
 import { consumeLimit } from '../../lib/rate-limit.js';
-import { orderByToken } from '../orders/access.js';
+import { orderForRequest } from '../orders/access.js';
 import type { PaymentPort } from './port.js';
 
 const errors = {
@@ -50,7 +50,7 @@ export const paymentRoutes =
             },
           );
         }
-        const order = await orderByToken(db, request.params.id, request.headers['x-order-token']);
+        const order = await orderForRequest(db, request, request.params.id);
         if (!order) throw new AppError(404, 'NOT_FOUND', 'Commande introuvable.');
         if (!(await consumeLimit(db, `payment_ip:${request.ip}`, limits.paymentPerIp))) {
           throw new AppError(

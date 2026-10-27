@@ -603,6 +603,7 @@ describe('cas relevés par la revue isolée de la tranche 6', () => {
           nodeEnv: 'production',
           webUrl: 'http://localhost:3000',
           allowedOrigins: [testOrigin],
+          buyers: { phoneVerification: false, otpSecret: 'x'.repeat(32) },
         },
       }),
     );

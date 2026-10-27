@@ -1,5 +1,5 @@
 import { formatDateTime } from '@gatio/shared';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { PgBoss } from 'pg-boss';
 import type { Db, Tx } from '../../db/client.js';
@@ -21,16 +21,25 @@ const RETRY_MINUTES = [1, 5, 15, 30, 60, 120, 240];
  * R14 : l'envoi du billet est mis en file dans la transaction de confirmation. Seule une
  * ligne de suivi est écrite ici ; les liens secrets sont créés au moment de l'envoi, pour
  * qu'aucun jeton ne soit jamais gardé en clair.
- * Destinataire : uniquement l'email saisi à l'achat (R32). Jamais l'email validé du compte :
- * le numéro n'étant pas vérifié à l'achat, un tiers qui aurait fait valider son adresse sur
- * le compte d'un autre numéro recevrait les billets de ce dernier (revue de la tranche 7).
+ * Destinataire : l'email saisi à l'achat ; à défaut, l'email validé du compte d'un numéro
+ * vérifié (B9, journal de bord n° 73). Une adresse n'est rattachée au compte que par une
+ * commande passée avec le numéro prouvé (voir prepareNext) : un tiers qui achète avec le
+ * numéro d'un autre ne peut pas y rattacher la sienne (revue de la tranche 7).
  */
 export async function queueTicketEmail(tx: Tx, order: typeof orders.$inferSelect) {
-  if (!order.contactEmail) return;
+  let recipient = order.contactEmail;
+  if (!recipient) {
+    const [buyer] = await tx
+      .select({ email: buyers.email })
+      .from(buyers)
+      .where(and(eq(buyers.id, order.buyerId), isNotNull(buyers.phoneVerifiedAt)));
+    recipient = buyer?.email ?? null;
+  }
+  if (!recipient) return;
   await tx.insert(outboundMessages).values({
     channel: 'email',
     purpose: 'ticket',
-    recipient: order.contactEmail,
+    recipient,
     orderId: order.id,
   });
 }
@@ -149,9 +158,13 @@ async function prepareNext(tx: Tx, deps: TicketEmailDeps): Promise<Prepared | 's
     .update(orders)
     .set({ emailAccessTokenHash: access.hash, updatedAt: sql`now()` })
     .where(eq(orders.id, row.order.id));
-  // Lien de validation seulement si l'adresse n'est pas déjà celle validée du compte (R32).
+  // Lien de validation (R32) seulement pour une commande passée avec le numéro prouvé
+  // (n° 73), et si l'adresse n'est pas déjà celle validée du compte.
   let verifyLink: string | null = null;
-  if (row.buyerEmail?.toLowerCase() !== message.recipient.toLowerCase()) {
+  if (
+    row.order.phoneVerified &&
+    row.buyerEmail?.toLowerCase() !== message.recipient.toLowerCase()
+  ) {
     const verification = newToken();
     await tx.insert(emailVerifications).values({
       buyerId: row.order.buyerId,

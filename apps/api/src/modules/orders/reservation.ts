@@ -28,11 +28,12 @@ export async function createOrder(
   db: Db,
   input: OrderCreate,
   idempotency: { key: string; scope: string },
+  phoneVerified = false,
 ): Promise<CreatedOrder> {
   // Interblocage ou collision de référence (très rares) : la transaction est rejouée.
   for (let attempt = 1; ; attempt++) {
     try {
-      return await createOrderOnce(db, input, idempotency);
+      return await createOrderOnce(db, input, idempotency, phoneVerified);
     } catch (error) {
       if (attempt >= 3 || !isRetryable(error)) throw error;
     }
@@ -53,6 +54,7 @@ async function createOrderOnce(
   db: Db,
   input: OrderCreate,
   idempotency: { key: string; scope: string },
+  phoneVerified: boolean,
 ): Promise<CreatedOrder> {
   const { token, hash } = newToken();
   const order = await db.transaction(async (tx) => {
@@ -132,6 +134,7 @@ async function createOrderOnce(
         idempotencyKey: idempotency.key,
         idempotencyScope: idempotency.scope,
         reservationExpiresAt: sql`now() + make_interval(mins => ${RESERVATION_MINUTES})`,
+        phoneVerified,
       })
       .returning();
     // Les trois montants sont figés par ligne (R5) : changer une règle ou un prix ensuite

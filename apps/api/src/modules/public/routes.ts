@@ -24,7 +24,7 @@ type CategoryRow = typeof ticketCategories.$inferSelect;
 const VISIBLE_BY_LINK = ['published', 'postponed', 'cancelled'] as const;
 
 export const publicRoutes =
-  (db: Db): FastifyPluginAsyncZod =>
+  (db: Db, options: { phoneVerification: boolean }): FastifyPluginAsyncZod =>
   async (app) => {
     app.get(
       '/events',
@@ -120,6 +120,7 @@ export const publicRoutes =
           status: row.event.status,
           organizerName: row.organizerName,
           categories: categories.map((category) => publicCategory(category, row.event, now)),
+          phoneVerification: options.phoneVerification,
         };
       },
     );

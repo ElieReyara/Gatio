@@ -26,12 +26,22 @@ describe('configuration', () => {
       MAILPIT_URL: 'http://mailpit:8025',
       EMAIL_FROM: 'noreply@gatio.example',
       STORAGE_DIR: '/var/lib/gatio/media',
+      OTP_SECRET: 'x'.repeat(32),
     };
     expect(() => loadConfig(production)).toThrow(/TICKET_SIGNING_PRIVATE_KEY/);
     expect(loadConfig({ ...production, TICKET_SIGNING_PRIVATE_KEY: 'k' }).ticketSigning).toEqual({
       keyId: 1,
       privateKey: 'k',
     });
+  });
+
+  it('vérification du numéro active par défaut, passerelle SMS absente sans adresse', () => {
+    const config = loadConfig({ NODE_ENV: 'development' });
+    expect(config.buyers.phoneVerification).toBe(true);
+    expect(config.smsGateway).toBeNull();
+    expect(
+      loadConfig({ NODE_ENV: 'development', BUYER_PHONE_VERIFICATION: 'off' }).buyers,
+    ).toMatchObject({ phoneVerification: false });
   });
 
   it('accepte l’absence de clé de signature en développement', () => {

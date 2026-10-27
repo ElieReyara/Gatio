@@ -23,11 +23,11 @@ export function readSessionToken(request: FastifyRequest): string | null {
 }
 
 export function setSessionCookie(reply: FastifyReply, token: string, secure: boolean) {
-  reply.header('set-cookie', cookie(token, SESSION_DAYS * 24 * 60 * 60, secure));
+  reply.header('set-cookie', cookie(SESSION_COOKIE, token, SESSION_DAYS * 24 * 60 * 60, secure));
 }
 
 export function clearSessionCookie(reply: FastifyReply, secure: boolean) {
-  reply.header('set-cookie', cookie('', 0, secure));
+  reply.header('set-cookie', cookie(SESSION_COOKIE, '', 0, secure));
 }
 
 export const requireOrganizer =
@@ -55,9 +55,9 @@ export const requireOrganizer =
     throw new AppError(401, 'UNAUTHENTICATED', 'Connexion requise.');
   };
 
-function cookie(value: string, maxAgeSeconds: number, secure: boolean) {
+export function cookie(name: string, value: string, maxAgeSeconds: number, secure: boolean) {
   return [
-    `${SESSION_COOKIE}=${value}`,
+    `${name}=${value}`,
     'Path=/',
     'HttpOnly',
     'SameSite=Lax',
@@ -66,7 +66,7 @@ function cookie(value: string, maxAgeSeconds: number, secure: boolean) {
   ].join('; ');
 }
 
-function readCookie(header: string | undefined, name: string): string | null {
+export function readCookie(header: string | undefined, name: string): string | null {
   for (const part of header?.split(';') ?? []) {
     const [key, ...rest] = part.trim().split('=');
     if (key === name) return rest.join('=') || null;

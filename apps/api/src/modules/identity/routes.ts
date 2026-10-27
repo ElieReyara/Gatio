@@ -18,6 +18,7 @@ import { consumeLimit } from '../../lib/rate-limit.js';
 import { hashToken, newToken } from '../../lib/tokens.js';
 import type { EmailOutbox } from '../email/outbox.js';
 import { passwordResetEmail } from '../email/templates.js';
+import { clearBuyerCookie, currentBuyer } from '../buyers/auth.js';
 import { loadProfile } from './profile.js';
 import {
   clearSessionCookie,
@@ -142,10 +143,14 @@ export const identityRoutes =
       '/auth/logout',
       { schema: { response: { 204: z.null() } } },
       async (request, reply) => {
+        // Acheteur ou organisateur (§6.3) : toute session de ce navigateur est fermée.
         const token = readSessionToken(request);
         const session = token ? await findUserSession(db, token) : null;
         if (session) await revokeSession(db, session.sessionId);
+        const buyer = await currentBuyer(db, request, null, secureCookies);
+        if (buyer) await revokeSession(db, buyer.sessionId);
         clearSessionCookie(reply, secureCookies);
+        clearBuyerCookie(reply, secureCookies);
         return reply.code(204).send(null);
       },
     );

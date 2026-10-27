@@ -47,24 +47,34 @@ export function clearLinkParams() {
   }
 }
 
-// Téléchargement du PDF avec le jeton en en-tête (pas dans l'adresse).
-export async function downloadTicketPdf(orderId: string, ticketId: string, filename: string) {
+// Téléchargement du PDF : jeton de commande en en-tête (jamais dans l'adresse), à défaut la
+// session acheteur du navigateur (cookie).
+export function downloadTicketPdf(orderId: string, ticketId: string, filename: string) {
   const token = orderToken(orderId);
-  if (!token) return false;
+  return downloadPdf(
+    `/api/v1/orders/${orderId}/tickets/${ticketId}/pdf`,
+    filename,
+    token ? { 'x-order-token': token } : {},
+  );
+}
+
+// « Mes billets » (B7) : session acheteur.
+export function downloadMyTicketPdf(ticketId: string, filename: string) {
+  return downloadPdf(`/api/v1/me/tickets/${ticketId}/pdf`, filename, {});
+}
+
+async function downloadPdf(url: string, filename: string, headers: Record<string, string>) {
   try {
-    const response = await fetch(`/api/v1/orders/${orderId}/tickets/${ticketId}/pdf`, {
-      headers: { 'x-order-token': token },
-      cache: 'no-store',
-    });
+    const response = await fetch(url, { headers, cache: 'no-store' });
     if (!response.ok) return false;
-    const url = URL.createObjectURL(await response.blob());
+    const blob = URL.createObjectURL(await response.blob());
     const link = document.createElement('a');
-    link.href = url;
+    link.href = blob;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setTimeout(() => URL.revokeObjectURL(blob), 60_000);
     return true;
   } catch {
     return false;

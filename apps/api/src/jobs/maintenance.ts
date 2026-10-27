@@ -3,7 +3,7 @@ import type { PgBoss } from 'pg-boss';
 
 // Purge quotidienne : compteurs de limites passés (ils contiennent emails et adresses IP,
 // S7), liens de réinitialisation et de validation d'email expirés depuis plus de 7 jours,
-// destinataires des messages au-delà de 90 jours.
+// destinataires des messages au-delà de 90 jours, codes SMS de plus d'un jour.
 const PURGE_QUEUE = 'maintenance.purge';
 
 export async function startMaintenance(boss: PgBoss, pool: pg.Pool) {
@@ -21,5 +21,7 @@ export async function startMaintenance(boss: PgBoss, pool: pg.Pool) {
     await pool.query(
       "delete from email_verifications where expires_at < now() - interval '7 days'",
     );
+    // Codes SMS (R31) : inutiles après expiration ; un jour gardé pour le blocage de 15 min.
+    await pool.query("delete from otp_codes where created_at < now() - interval '1 day'");
   });
 }

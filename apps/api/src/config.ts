@@ -20,6 +20,7 @@ const localDefaults = {
   MAILPIT_URL: 'http://127.0.0.1:8025',
   EMAIL_FROM: 'noreply@gatio.local',
   STORAGE_DIR: '.data/media',
+  OTP_SECRET: 'developpement-seulement-secret-des-codes-sms',
 };
 
 const envSchema = z.object({
@@ -40,6 +41,17 @@ const envSchema = z.object({
   TICKET_SIGNING_KEY_ID: z.coerce.number().int().min(0).max(255),
   // Facultative en développement (clé éphémère), obligatoire en production.
   TICKET_SIGNING_PRIVATE_KEY: z.string().min(1).optional(),
+  // R31 : les codes SMS sont hachés avec ce secret (un code de 6 chiffres haché seul se
+  // retrouverait en un million d'essais).
+  OTP_SECRET: z.string().min(32),
+  // Code SMS avant la première réservation depuis un téléphone (journal de bord n° 71) ;
+  // « off » si les SMS n'arrivent plus : retour à la double saisie du numéro.
+  BUYER_PHONE_VERIFICATION: z.enum(['on', 'off']).default('on'),
+  // Passerelle SMS Android (essai réel, PC-8) ; sans adresse, les SMS s'affichent dans la
+  // console de l'API (développement seulement).
+  SMS_GATEWAY_URL: z.string().url().optional(),
+  SMS_GATEWAY_LOGIN: z.string().min(1).optional(),
+  SMS_GATEWAY_PASSWORD: z.string().min(1).optional(),
 });
 
 export type Config = {
@@ -53,6 +65,8 @@ export type Config = {
   allowedOrigins: string[];
   email: { mailpitUrl: string; from: string };
   storageDir: string;
+  buyers: { phoneVerification: boolean; otpSecret: string };
+  smsGateway: { url: string; login: string; password: string } | null;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -82,6 +96,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowedOrigins: parsed.data.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()),
     email: { mailpitUrl: parsed.data.MAILPIT_URL, from: parsed.data.EMAIL_FROM },
     storageDir: parsed.data.STORAGE_DIR,
+    buyers: {
+      phoneVerification: parsed.data.BUYER_PHONE_VERIFICATION === 'on',
+      otpSecret: parsed.data.OTP_SECRET,
+    },
+    smsGateway: parsed.data.SMS_GATEWAY_URL
+      ? {
+          url: parsed.data.SMS_GATEWAY_URL,
+          login: parsed.data.SMS_GATEWAY_LOGIN ?? '',
+          password: parsed.data.SMS_GATEWAY_PASSWORD ?? '',
+        }
+      : null,
   };
 }
 

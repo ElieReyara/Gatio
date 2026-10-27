@@ -8,6 +8,7 @@ import { jobEmailOutbox, startEmailWorker } from './modules/email/outbox.js';
 import { mailpitEmail } from './modules/email/port.js';
 import { diskStorage } from './modules/media/storage.js';
 import { fakePaymentProvider } from './modules/payments/fake-provider.js';
+import { smsPortFor } from './modules/sms/port.js';
 import { jobNotificationQueue, startPaymentJobs } from './modules/payments/jobs.js';
 import { startTicketEmailJobs } from './modules/tickets/email.js';
 import { createTicketSigner, generateSigningKey } from './modules/tickets/signing.js';
@@ -24,6 +25,8 @@ if (config.nodeEnv === 'production') {
   throw new Error('Aucun prestataire de paiement réel configuré (tranche 16)');
 }
 const payments = fakePaymentProvider();
+// Sans passerelle configurée, les SMS s'affichent dans la console de l'API.
+const sms = smsPortFor(config, { warn: (message: string) => app.log.warn(message) });
 const app = await buildApp({
   config,
   pool,
@@ -31,8 +34,10 @@ const app = await buildApp({
   emailOutbox: jobEmailOutbox(jobs),
   storage: diskStorage(config.storageDir),
   payments,
+  sms,
   notificationReceived: jobNotificationQueue(jobs),
 });
+if (config.smsGateway) app.log.warn('SMS envoyés pour de vrai par la passerelle Android');
 if (!config.ticketSigning.privateKey) {
   app.log.warn('TICKET_SIGNING_PRIVATE_KEY absente : clé éphémère, QR invalides après redémarrage');
 }

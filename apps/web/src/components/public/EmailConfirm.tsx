@@ -46,8 +46,8 @@ export function EmailConfirm() {
               <strong>{t.confirmed}</strong>
             </Banner>
             <p className="lead">{t.confirmedText}</p>
-            <Link className="button-primary button-link" href="/">
-              {t.toEvents}
+            <Link className="button-primary button-link" href="/mes-billets">
+              {t.toMyTickets}
             </Link>
           </>
         )}
@@ -57,8 +57,8 @@ export function EmailConfirm() {
               <strong>{t.invalid}</strong> {t.invalidText}
             </Banner>
             <p className="lead">{t.stillValid}</p>
-            <Link className="button-secondary button-link" href="/">
-              {t.toEvents}
+            <Link className="button-secondary button-link" href="/mes-billets">
+              {t.toMyTickets}
             </Link>
           </>
         )}

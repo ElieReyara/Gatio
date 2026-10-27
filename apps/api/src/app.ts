@@ -15,6 +15,7 @@ import { AppError } from './lib/errors.js';
 import { isAllowedOrigin } from './lib/origin.js';
 import { maskPersonalData, serializeError } from './lib/redact.js';
 import type { EmailOutbox } from './modules/email/outbox.js';
+import { buyerRoutes } from './modules/buyers/routes.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { identityRoutes } from './modules/identity/routes.js';
 import { mediaRoutes } from './modules/media/routes.js';
@@ -28,16 +29,18 @@ import type { PaymentPort } from './modules/payments/port.js';
 import { paymentRoutes, paymentWebhookRoutes } from './modules/payments/routes.js';
 import { publicRoutes } from './modules/public/routes.js';
 import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
+import type { SmsPort } from './modules/sms/port.js';
 import { ticketRoutes } from './modules/tickets/routes.js';
 import type { TicketSigner } from './modules/tickets/signing.js';
 
 export type AppDependencies = {
-  config: Pick<Config, 'logLevel' | 'nodeEnv' | 'webUrl' | 'allowedOrigins'>;
+  config: Pick<Config, 'logLevel' | 'nodeEnv' | 'webUrl' | 'allowedOrigins' | 'buyers'>;
   pool: pg.Pool;
   ticketSigner: TicketSigner;
   emailOutbox: EmailOutbox;
   storage: StoragePort;
   payments: PaymentPort;
+  sms: SmsPort;
   // Traitement d'une notification de paiement enregistrée : file pg-boss en service,
   // directement (après la réponse) dans les tests.
   notificationReceived?: (notificationId: string) => Promise<void>;
@@ -53,6 +56,7 @@ export async function buildApp({
   emailOutbox,
   storage,
   payments,
+  sms,
   notificationReceived,
   runInBackground,
 }: AppDependencies) {
@@ -134,8 +138,22 @@ export async function buildApp({
         organizerRoutes({ db, storage, secureCookies: config.nodeEnv === 'production' }),
       );
       await api.register(mediaRoutes(storage));
-      await api.register(publicRoutes(db));
-      await api.register(orderRoutes(db, ticketSigner));
+      await api.register(publicRoutes(db, { phoneVerification: config.buyers.phoneVerification }));
+      await api.register(
+        orderRoutes(db, ticketSigner, {
+          phoneVerification: config.buyers.phoneVerification,
+          secureCookies: config.nodeEnv === 'production',
+        }),
+      );
+      await api.register(
+        buyerRoutes({
+          db,
+          sms,
+          otpSecret: config.buyers.otpSecret,
+          signer: ticketSigner,
+          secureCookies: config.nodeEnv === 'production',
+        }),
+      );
       await api.register(paymentRoutes(db, payments));
       await api.register(ticketRoutes(db, ticketSigner));
       await api.register(paymentWebhookRoutes(db, payments, onNotification));

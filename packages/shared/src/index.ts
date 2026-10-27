@@ -7,3 +7,4 @@ export * from './events.js';
 export * from './public.js';
 export * from './orders.js';
 export * from './format.js';
+export * from './buyers.js';

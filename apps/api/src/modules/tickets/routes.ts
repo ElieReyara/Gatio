@@ -1,5 +1,6 @@
 import { emailVerificationConfirmSchema, errorResponseSchema } from '@gatio/shared';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import type { FastifyReply } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db } from '../../db/client.js';
@@ -8,7 +9,7 @@ import { AppError } from '../../lib/errors.js';
 import { limits } from '../../lib/limits.js';
 import { consumeLimit } from '../../lib/rate-limit.js';
 import { hashToken } from '../../lib/tokens.js';
-import { orderByToken } from '../orders/access.js';
+import { orderForRequest } from '../orders/access.js';
 import { loadOrderTickets } from './documents.js';
 import { renderTicketPdf } from './pdf.js';
 import type { TicketSigner } from './signing.js';
@@ -31,30 +32,9 @@ export const ticketRoutes =
         schema: { params: z.object({ id: z.uuid(), ticketId: z.uuid() }) },
       },
       async (request, reply) => {
-        // Chaque PDF se calcule : limité par adresse, comme les autres routes coûteuses.
-        if (!(await consumeLimit(db, `ticket_pdf_ip:${request.ip}`, limits.ticketPdfPerIp))) {
-          throw new AppError(429, 'RATE_LIMITED', 'Trop de téléchargements. Réessayez plus tard.');
-        }
-        const order = await orderByToken(db, request.params.id, request.headers['x-order-token']);
-        if (!order || order.status !== 'paid') {
-          throw new AppError(404, 'NOT_FOUND', 'Billet introuvable.');
-        }
-        const ticket = (await loadOrderTickets(db, signer, order.id)).find(
-          (candidate) => candidate.ticketId === request.params.ticketId,
-        );
-        if (!ticket || ticket.status === 'void') {
-          throw new AppError(404, 'NOT_FOUND', 'Billet introuvable.');
-        }
-        const pdf = await renderTicketPdf(ticket);
-        await recordDownload(db, order.id, order.eventId);
-        return reply
-          .header('cache-control', 'no-store')
-          .header(
-            'content-disposition',
-            `attachment; filename="billet-${ticket.reference}-${ticket.index}.pdf"`,
-          )
-          .type('application/pdf')
-          .send(pdf);
+        await limitPdfDownloads(db, request.ip);
+        const order = await orderForRequest(db, request, request.params.id);
+        return sendTicketPdf(db, signer, reply, order, request.params.ticketId);
       },
     );
 
@@ -109,6 +89,43 @@ export const ticketRoutes =
       },
     );
   };
+
+// Chaque PDF se calcule : limité par adresse, comme les autres routes coûteuses.
+export async function limitPdfDownloads(db: Db, ip: string) {
+  if (!(await consumeLimit(db, `ticket_pdf_ip:${ip}`, limits.ticketPdfPerIp))) {
+    throw new AppError(429, 'RATE_LIMITED', 'Trop de téléchargements. Réessayez plus tard.');
+  }
+}
+
+// PDF d'un billet d'une commande payée ; commande absente ou non payée, billet absent ou
+// annulé : même réponse.
+export async function sendTicketPdf(
+  db: Db,
+  signer: TicketSigner,
+  reply: FastifyReply,
+  order: { id: string; status: string; eventId: string } | null,
+  ticketId: string,
+) {
+  if (!order || order.status !== 'paid') {
+    throw new AppError(404, 'NOT_FOUND', 'Billet introuvable.');
+  }
+  const ticket = (await loadOrderTickets(db, signer, order.id)).find(
+    (candidate) => candidate.ticketId === ticketId,
+  );
+  if (!ticket || ticket.status === 'void') {
+    throw new AppError(404, 'NOT_FOUND', 'Billet introuvable.');
+  }
+  const pdf = await renderTicketPdf(ticket);
+  await recordDownload(db, order.id, order.eventId);
+  return reply
+    .header('cache-control', 'no-store')
+    .header(
+      'content-disposition',
+      `attachment; filename="billet-${ticket.reference}-${ticket.index}.pdf"`,
+    )
+    .type('application/pdf')
+    .send(pdf);
+}
 
 // Mesure du parcours (§8) écrite par le serveur, avec la session anonyme du paiement ;
 // une seule fois par commande (les téléchargements répétés ne faussent pas la mesure).

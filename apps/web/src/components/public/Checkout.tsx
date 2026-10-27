@@ -4,7 +4,9 @@ import {
   MAX_PENDING_ORDERS_PER_PHONE,
   MAX_TICKETS_PER_ORDER,
   orderCreateSchema,
+  PHONE_VERIFICATION_REQUIRED,
   phonesMatch,
+  type OrderCreate,
   type OrderCreated,
   type PublicEvent,
 } from '@gatio/shared';
@@ -12,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Banner } from '@/components/Banner';
 import { Field } from '@/components/form/Field';
+import { PhoneLogin } from '@/components/public/PhoneLogin';
 import { PublicCategoryCard } from '@/components/public/PublicCategoryCard';
 import { postJson } from '@/lib/api-client';
 import { randomKey, saveOrderToken } from '@/lib/buyer-storage';
@@ -22,8 +25,16 @@ const t = texts.checkout;
 type FieldName = 'name' | 'phone' | 'phoneConfirm' | 'email';
 type Errors = Partial<Record<FieldName, string>>;
 
-// Choix des billets et coordonnées (maquette B3), messages d'erreur (B8).
-export function Checkout({ event }: { event: PublicEvent }) {
+// Choix des billets et coordonnées (maquette B3), messages d'erreur (B8). Vérification du
+// numéro active (journal de bord n° 71) : code SMS (B6) avant la première réservation depuis
+// ce téléphone ; la double saisie du numéro n'est plus utile.
+export function Checkout({
+  event,
+  phoneVerification,
+}: {
+  event: PublicEvent;
+  phoneVerification: boolean;
+}) {
   const router = useRouter();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [contact, setContact] = useState({ name: '', phone: '', phoneConfirm: '', email: '' });
@@ -34,6 +45,8 @@ export function Checkout({ event }: { event: PublicEvent }) {
   // Même clé tant que la demande ne change pas : un double appui ou une réponse perdue
   // ne crée jamais deux commandes (§6.1).
   const [attempt, setAttempt] = useState<{ key: string; body: string } | null>(null);
+  // Réservation en attente du code SMS : reprise telle quelle (même clé) après le code.
+  const [verifying, setVerifying] = useState<{ data: OrderCreate; key: string } | null>(null);
 
   const total = Object.values(quantities).reduce((sum, quantity) => sum + quantity, 0);
   const lines = event.categories
@@ -72,7 +85,7 @@ export function Checkout({ event }: { event: PublicEvent }) {
         if (field === 'email') next.email = t.emailInvalid;
       }
     }
-    if (!next.phone && !phonesMatch(contact.phone, contact.phoneConfirm)) {
+    if (!phoneVerification && !next.phone && !phonesMatch(contact.phone, contact.phoneConfirm)) {
       next.phoneConfirm = t.phoneMismatch;
     }
     setErrors(next);
@@ -83,10 +96,13 @@ export function Checkout({ event }: { event: PublicEvent }) {
     const body = JSON.stringify(parsed.data);
     const key = attempt?.body === body ? attempt.key : randomKey();
     setAttempt({ key, body });
+    await place(parsed.data, key);
+  }
+
+  async function place(data: OrderCreate, key: string) {
     setBusy(true);
-    const result = await postJson<OrderCreated>('/orders', parsed.data, {
-      'idempotency-key': key,
-    });
+    setFailure(null);
+    const result = await postJson<OrderCreated>('/orders', data, { 'idempotency-key': key });
     if (result.ok) {
       saveOrderToken(result.data.orderId, result.data.orderToken);
       router.push(`/commande/${result.data.orderId}`);
@@ -94,6 +110,10 @@ export function Checkout({ event }: { event: PublicEvent }) {
     }
     setBusy(false);
     const details = (result.error?.details ?? {}) as Record<string, unknown>;
+    if (result.status === 401 && details.reason === PHONE_VERIFICATION_REQUIRED) {
+      setVerifying({ data, key });
+      return;
+    }
     switch (result.error?.code) {
       case 'STOCK_INSUFFICIENT':
         setFailure(t.stock);
@@ -123,6 +143,19 @@ export function Checkout({ event }: { event: PublicEvent }) {
   }
 
   const errorCount = Object.keys(errors).length;
+  if (verifying) {
+    return (
+      <PhoneLogin
+        phone={verifying.data.contact.phone}
+        onVerified={() => {
+          const pending = verifying;
+          setVerifying(null);
+          void place(pending.data, pending.key);
+        }}
+        onChangePhone={() => setVerifying(null)}
+      />
+    );
+  }
   return (
     <form className="stack" onSubmit={submit} noValidate>
       <h1 className="title title--flush">{t.title}</h1>
@@ -206,29 +239,31 @@ export function Checkout({ event }: { event: PublicEvent }) {
         inputMode="tel"
         autoComplete="tel"
         placeholder="66 12 34 56"
-        help={t.phoneHelp}
+        help={phoneVerification ? t.phoneVerifiedHelp : t.phoneHelp}
         value={contact.phone}
         onChange={(e) => update('phone', e.target.value)}
         error={errors.phone}
         disabled={busy}
       />
-      <Field
-        label={t.phoneConfirm}
-        name="phoneConfirm"
-        type="tel"
-        inputMode="tel"
-        autoComplete="off"
-        help={t.phoneConfirmHelp}
-        value={contact.phoneConfirm}
-        onChange={(e) => update('phoneConfirm', e.target.value)}
-        onPaste={(e) => {
-          e.preventDefault();
-          setErrors((current) => ({ ...current, phoneConfirm: t.noPaste }));
-        }}
-        onDrop={(e) => e.preventDefault()}
-        error={errors.phoneConfirm}
-        disabled={busy}
-      />
+      {!phoneVerification && (
+        <Field
+          label={t.phoneConfirm}
+          name="phoneConfirm"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          help={t.phoneConfirmHelp}
+          value={contact.phoneConfirm}
+          onChange={(e) => update('phoneConfirm', e.target.value)}
+          onPaste={(e) => {
+            e.preventDefault();
+            setErrors((current) => ({ ...current, phoneConfirm: t.noPaste }));
+          }}
+          onDrop={(e) => e.preventDefault()}
+          error={errors.phoneConfirm}
+          disabled={busy}
+        />
+      )}
       <Field
         label={t.email}
         name="email"

@@ -41,6 +41,9 @@ export const publicEventSchema = publicEventSummarySchema.extend({
   status: z.enum(eventStatuses),
   organizerName: z.string(),
   categories: z.array(publicCategorySchema),
+  // Code SMS demandé avant de réserver (journal de bord n° 71) : le site n'affiche la double
+  // saisie du numéro que si la vérification est coupée.
+  phoneVerification: z.boolean(),
 });
 export type PublicEvent = z.infer<typeof publicEventSchema>;
 

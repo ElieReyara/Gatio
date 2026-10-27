@@ -52,13 +52,15 @@ export function OrderView({ orderId }: { orderId: string }) {
   const [initialTicket] = useState(() => Math.max(0, (link.ticket ?? 1) - 1));
 
   const load = useCallback(async () => {
+    // Jeton gardé par ce téléphone, sinon session acheteur (cookie, « Mes billets »).
     const stored = orderToken(orderId);
-    let result = stored
-      ? await getJson<unknown>(`/orders/${orderId}`, { 'x-order-token': stored })
-      : null;
+    let result = await getJson<unknown>(
+      `/orders/${orderId}`,
+      stored ? { 'x-order-token': stored } : {},
+    );
     // Le jeton déjà gardé par ce téléphone reste prioritaire ; celui du lien ne le
     // remplace que s'il ouvre la commande.
-    if ((!result || (!result.ok && result.status === 404)) && link.token) {
+    if (!result.ok && result.status === 404 && link.token) {
       const viaLink = await getJson<unknown>(`/orders/${orderId}`, {
         'x-order-token': link.token,
       });
@@ -66,10 +68,6 @@ export function OrderView({ orderId }: { orderId: string }) {
       result = viaLink;
     }
     if (link.token) clearLinkParams();
-    if (!result) {
-      setState({ kind: 'missing' });
-      return;
-    }
     const parsed = result.ok ? orderSchema.safeParse(result.data) : null;
     if (parsed?.success) {
       const order = parsed.data;
@@ -112,7 +110,7 @@ export function OrderView({ orderId }: { orderId: string }) {
 
   async function start(method: PaymentMethod, order: Order) {
     const token = orderToken(orderId);
-    if (busy || !token) return;
+    if (busy) return;
     setBusy(true);
     setFailure(null);
     const key = attempt?.method === method ? attempt.key : randomKey();
@@ -120,7 +118,7 @@ export function OrderView({ orderId }: { orderId: string }) {
     const result = await postJson<PaymentStarted>(
       `/orders/${orderId}/payments`,
       { method },
-      { 'idempotency-key': key, 'x-order-token': token },
+      { 'idempotency-key': key, ...(token ? { 'x-order-token': token } : {}) },
     );
     // Réponse reçue (acceptée ou refusée) : le prochain essai est une nouvelle demande.
     if (result.ok || result.status !== 0) setAttempt(null);

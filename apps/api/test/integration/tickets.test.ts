@@ -8,7 +8,7 @@ import * as schema from '../../src/db/schema.js';
 import type { EmailMessage, EmailPort } from '../../src/modules/email/port.js';
 import type { FakePaymentProvider } from '../../src/modules/payments/fake-provider.js';
 import { sendQueuedTicketEmails } from '../../src/modules/tickets/email.js';
-import { testDependencies, testOrigin } from '../../src/test-support.js';
+import { buyerCookie, testDependencies, testOrigin } from '../../src/test-support.js';
 import { testDatabaseUrl } from './database.js';
 
 const pool = new pg.Pool({ connectionString: testDatabaseUrl, max: 10 });
@@ -47,7 +47,7 @@ const count = async (table: string, where = 'true') =>
   (await pool.query(`select count(*)::int as n from ${table} where ${where}`)).rows[0].n as number;
 
 async function paidOrder(
-  options: { quantity?: number; email?: string | null; phone?: string } = {},
+  options: { quantity?: number; email?: string | null; phone?: string; cookie?: string } = {},
 ) {
   counter += 1;
   const created = await call({
@@ -83,6 +83,7 @@ async function paidOrder(
       origin: testOrigin,
       'idempotency-key': `cle-billet-${counter}-${Date.now()}`,
       'x-forwarded-for': `10.2.0.${counter % 250}`,
+      ...(options.cookie ? { cookie: options.cookie } : {}),
     },
     payload: {
       eventSlug: event.slug,
@@ -123,7 +124,7 @@ const linkToken = (text: string, path: string) =>
 
 beforeEach(async () => {
   await pool.query(
-    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, fee_rules, audit_log, buyers, orders, order_items, funnel_events, payments, payment_webhook_events, reconciliation_runs, discrepancies, payouts, tickets, email_verifications, outbound_messages cascade',
+    'truncate users, organizers, auth_sessions, password_resets, rate_limit_counters, events, ticket_categories, fee_rules, audit_log, buyers, orders, order_items, funnel_events, payments, payment_webhook_events, reconciliation_runs, discrepancies, payouts, tickets, email_verifications, outbound_messages, otp_codes cascade',
   );
   await pool.query(`insert into fee_rules (scope, scope_id, calc_type, params, currency, valid_from)
     values ('platform', null, 'percent_fixed', '{"percent_bps": 400, "fixed_amount": 100}', 'XAF', now() - interval '1 minute')`);
@@ -285,7 +286,8 @@ describe('email du billet (R14, R32, E1)', () => {
 
 describe('validation de l’email (R32, B9)', () => {
   it('l’email n’est rattaché au compte qu’après validation ; lien à usage unique', async () => {
-    await paidOrder({ phone: '66 12 34 56' });
+    const cookie = await buyerCookie(app, deps.sms, '66 12 34 56');
+    await paidOrder({ phone: '66 12 34 56', cookie });
     await send();
     expect((await pool.query('select email from buyers')).rows).toEqual([{ email: null }]);
     const token = linkToken(sent[0]!.text, '/email/confirmer');
@@ -305,36 +307,44 @@ describe('validation de l’email (R32, B9)', () => {
     expect(errorOf(await confirm()).code).toBe('TOKEN_INVALID');
 
     // Achat suivant avec la même adresse : billet envoyé, sans nouveau lien de validation.
-    await paidOrder({ phone: '66 12 34 56' });
+    await paidOrder({ phone: '66 12 34 56', cookie });
     await send();
     expect(sent).toHaveLength(2);
     expect(linkToken(sent[1]!.text, '/email/confirmer')).toBeUndefined();
+
+    // Achat sans email : le billet part à l'adresse validée du compte (B9, n° 73).
+    await paidOrder({ phone: '66 12 34 56', cookie, email: null });
+    await send();
+    expect(sent.map((message) => message.to)).toEqual([
+      'acheteur@exemple.com',
+      'acheteur@exemple.com',
+      'acheteur@exemple.com',
+    ]);
   });
 
-  it('un tiers qui valide son adresse sur le numéro d’un autre ne reçoit pas ses billets (revue, B1)', async () => {
-    // Le tiers achète avec le numéro de la victime et sa propre adresse, puis la valide.
+  it('un tiers qui achète avec le numéro d’un autre ne peut pas y rattacher son adresse (revue, B1 ; n° 73)', async () => {
+    // Vérification coupée : le tiers achète avec le numéro de la victime et sa propre adresse.
     await paidOrder({ phone: '66 12 34 56', email: 'tiers@exemple.com' });
     await send();
-    const token = linkToken(sent[0]!.text, '/email/confirmer');
-    await app.inject({
-      method: 'POST',
-      url: '/api/v1/email-verifications/confirm',
-      headers: { origin: testOrigin },
-      payload: { token },
-    });
+    expect(sent[0]!.to).toBe('tiers@exemple.com');
+    // Commande sans numéro prouvé : aucun lien de validation, rien à rattacher au compte.
+    expect(linkToken(sent[0]!.text, '/email/confirmer')).toBeUndefined();
+    expect(await count('email_verifications')).toBe(0);
     // La victime achète sans donner d'email : rien ne part vers l'adresse du tiers.
-    await paidOrder({ phone: '66 12 34 56', email: null });
+    const cookie = await buyerCookie(app, deps.sms, '66 12 34 56');
+    await paidOrder({ phone: '66 12 34 56', email: null, cookie });
     await send();
     expect(sent).toHaveLength(1);
     // Avec son email : le billet part chez elle seulement.
-    await paidOrder({ phone: '66 12 34 56', email: 'victime@exemple.com' });
+    await paidOrder({ phone: '66 12 34 56', email: 'victime@exemple.com', cookie });
     await send();
     expect(sent.map((message) => message.to)).toEqual(['tiers@exemple.com', 'victime@exemple.com']);
   });
 
   it('confirmer une adresse annule les autres liens en attente du compte', async () => {
-    await paidOrder({ phone: '66 12 34 56', email: 'premiere@exemple.com' });
-    await paidOrder({ phone: '66 12 34 56', email: 'seconde@exemple.com' });
+    const cookie = await buyerCookie(app, deps.sms, '66 12 34 56');
+    await paidOrder({ phone: '66 12 34 56', email: 'premiere@exemple.com', cookie });
+    await paidOrder({ phone: '66 12 34 56', email: 'seconde@exemple.com', cookie });
     await send();
     const [first, second] = sent.map((message) => linkToken(message.text, '/email/confirmer'));
     const confirm = (token: string | undefined) =>
@@ -352,7 +362,8 @@ describe('validation de l’email (R32, B9)', () => {
   });
 
   it('lien expiré : refusé', async () => {
-    await paidOrder();
+    const cookie = await buyerCookie(app, deps.sms, '66 12 34 56');
+    await paidOrder({ phone: '66 12 34 56', cookie });
     await send();
     await pool.query("update email_verifications set expires_at = now() - interval '1 second'");
     const response = await app.inject({

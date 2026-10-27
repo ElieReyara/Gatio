@@ -5,6 +5,7 @@ import {
   orderCreatedSchema,
   orderCreateSchema,
   orderSchema,
+  PHONE_VERIFICATION_REQUIRED,
   type Order,
   type PaymentMethod,
 } from '@gatio/shared';
@@ -24,13 +25,15 @@ import {
 import { AppError } from '../../lib/errors.js';
 import { limits } from '../../lib/limits.js';
 import { consumeLimit } from '../../lib/rate-limit.js';
-import { orderByToken } from './access.js';
+import { currentBuyer } from '../buyers/auth.js';
+import { orderForRequest } from './access.js';
 import { loadOrderTickets } from '../tickets/documents.js';
 import type { TicketSigner } from '../tickets/signing.js';
 import { createOrder, replayOrder } from './reservation.js';
 
 const errors = {
   400: errorResponseSchema,
+  401: errorResponseSchema,
   404: errorResponseSchema,
   409: errorResponseSchema,
   429: errorResponseSchema,
@@ -38,7 +41,11 @@ const errors = {
 
 // Commande et réservation (contrat §6.2).
 export const orderRoutes =
-  (db: Db, signer: TicketSigner): FastifyPluginAsyncZod =>
+  (
+    db: Db,
+    signer: TicketSigner,
+    options: { phoneVerification: boolean; secureCookies: boolean },
+  ): FastifyPluginAsyncZod =>
   async (app) => {
     app.post(
       '/orders',
@@ -61,6 +68,15 @@ export const orderRoutes =
             },
           );
         }
+        // Journal de bord n° 71 : réserver exige un téléphone qui a prouvé posséder le numéro
+        // (session acheteur ouverte par le code SMS), sauf si la vérification est coupée.
+        const buyer = await currentBuyer(db, request, reply, options.secureCookies);
+        const phoneVerified = buyer?.phone === request.body.contact.phone;
+        if (options.phoneVerification && !phoneVerified) {
+          throw new AppError(401, 'UNAUTHENTICATED', 'Confirmez d’abord votre numéro.', {
+            reason: PHONE_VERIFICATION_REQUIRED,
+          });
+        }
         // Le quota compte aussi les rejeus : une clé ne se devine pas par essais répétés.
         if (!(await consumeLimit(db, `order_ip:${request.ip}`, limits.orderPerIp))) {
           throw new AppError(429, 'RATE_LIMITED', 'Trop de commandes. Réessayez plus tard.', {
@@ -71,7 +87,9 @@ export const orderRoutes =
         const replay = await replayOrder(db, idempotency, request.body);
         if (replay) return reply.code(200).send(replay);
         try {
-          return reply.code(201).send(await createOrder(db, request.body, idempotency));
+          return reply
+            .code(201)
+            .send(await createOrder(db, request.body, idempotency, phoneVerified));
         } catch (error) {
           // Deux envois simultanés avec la même clé : le second rejoue le premier.
           if (isIdempotencyConflict(error)) {
@@ -83,8 +101,8 @@ export const orderRoutes =
       },
     );
 
-    // Accès « commande » : jeton de commande en en-tête (la session acheteur arrive en
-    // tranche 8). Commande introuvable ou jeton faux : même réponse.
+    // Accès « commande » : jeton de commande en en-tête, ou session acheteur du compte de la
+    // commande. Commande introuvable ou accès refusé : même réponse.
     app.get(
       '/orders/:id',
       {
@@ -96,7 +114,10 @@ export const orderRoutes =
       async (request, reply): Promise<Order> => {
         // Réponse propre à un jeton : jamais gardée par un cache intermédiaire.
         void reply.header('cache-control', 'no-store');
-        const found = await orderByToken(db, request.params.id, request.headers['x-order-token']);
+        const found = await orderForRequest(db, request, request.params.id, {
+          reply,
+          secure: options.secureCookies,
+        });
         if (!found) throw new AppError(404, 'NOT_FOUND', 'Commande introuvable.');
         const [row] = await db
           .select({

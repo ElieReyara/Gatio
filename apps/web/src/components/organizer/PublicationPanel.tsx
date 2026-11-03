@@ -244,6 +244,12 @@ export function PublicationPanel({
           >
             {t.editTickets}
           </Link>
+          <Link
+            className="link link--left link--tight"
+            href={`/organisateur/evenements/${event.id}/controleurs`}
+          >
+            {texts.space.scanners.inviteTitle}
+          </Link>
         </>
       )}
 

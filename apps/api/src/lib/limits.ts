@@ -24,6 +24,9 @@ export const limits = {
   otpSendGlobalDay: { limit: 2_000, windowSeconds: 24 * 60 * 60 },
   // Essais de code par adresse, tous numéros confondus (5 essais par code en plus).
   otpVerifyPerIp: { limit: 30, windowSeconds: 15 * 60 },
+  // Liens de contrôleur lus ou utilisés, par adresse (jetons de 256 bits : contre l'abus
+  // seulement ; large, car une même adresse d'opérateur sert beaucoup de téléphones).
+  scanJoinPerIp: { limit: 300, windowSeconds: 15 * 60 },
 } as const;
 
 export { MAX_PENDING_ORDERS_PER_PHONE } from '@gatio/shared';

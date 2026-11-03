@@ -1,13 +1,24 @@
 'use client';
 
-import { parseTicketQr, scanManifestSchema, type ScanManifest } from '@gatio/shared';
+import {
+  parseTicketQr,
+  SCAN_SESSION_ENDED,
+  scanManifestSchema,
+  scanSessionSchema,
+  type ScanManifest,
+  type ScanSession,
+} from '@gatio/shared';
 import type QrScanner from 'qr-scanner';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Banner } from '@/components/Banner';
 import { Icon, type IconName } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
+import { getJson } from '@/lib/api-client';
+import { formatDateTime } from '@/lib/format';
 import { texts } from '@/texts/fr';
 import { playSignal, resumeAudio, unlockAudio, type Signal } from './feedback';
 import { addPassage, listPassages, loadManifest, saveManifest, type LocalPassage } from './storage';
+import { hasJoined, markJoined } from './session';
 import { prepareManifest, verifyTicket, type PreparedManifest, type ScanOutcome } from './verify';
 
 const t = texts.scan;
@@ -16,6 +27,8 @@ const MANIFEST_URL = '/api/v1/dev/scan-prototype/manifest';
 const MANIFEST_TIMEOUT_MS = 10_000;
 const RESULT_MS = 1200;
 const SAME_QR_PAUSE_MS = 3000;
+// Session de scan revérifiée en ligne : un contrôleur retiré ou un lien désactivé est vu vite.
+const SESSION_CHECK_MS = 60_000;
 
 type ListState = 'loading' | 'ready' | 'missing';
 type ScannerState = 'idle' | 'loading' | 'running' | 'camera-error' | 'load-error';
@@ -28,6 +41,9 @@ export function ScanScreen() {
   const [scannerState, setScannerState] = useState<ScannerState>('idle');
   const [shown, setShown] = useState<Shown | null>(null);
   const [lastVerifyMs, setLastVerifyMs] = useState<number | null>(null);
+  // Session du contrôleur (tranche 9) ; sans elle et sans invitation passée : prototype.
+  const [session, setSession] = useState<ScanSession | null>(null);
+  const [revoked, setRevoked] = useState(false);
 
   const manifest = useRef<PreparedManifest | null>(null);
   const firstPassages = useRef(new Map<string, string>());
@@ -69,6 +85,33 @@ export function ScanScreen() {
       document.removeEventListener('visibilitychange', resumeAudio);
       clearTimeout(dismissTimer.current);
       scanner.current?.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
+    const check = async () => {
+      if (!navigator.onLine) return;
+      const result = await getJson<unknown>('/scan/session');
+      const parsed = result.ok ? scanSessionSchema.safeParse(result.data) : null;
+      if (parsed?.success) {
+        markJoined();
+        setSession(parsed.data);
+        setRevoked(false);
+      } else if (
+        !result.ok &&
+        result.status === 401 &&
+        (result.error?.details.reason === SCAN_SESSION_ENDED || hasJoined())
+      ) {
+        setRevoked(true);
+        scanner.current?.stop();
+      }
+    };
+    void check();
+    const timer = setInterval(() => void check(), SESSION_CHECK_MS);
+    window.addEventListener('online', check);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('online', check);
     };
   }, []);
 
@@ -154,11 +197,31 @@ export function ScanScreen() {
     </div>
   );
 
+  // Lien désactivé, contrôleur retiré ou événement terminé (maquette C1, état 2).
+  if (revoked) {
+    return (
+      <main className="page">
+        <Logo />
+        <h1 className="title">{t.title}</h1>
+        <Banner kind="error">
+          <strong>{texts.join.invalidStrong}</strong> {texts.join.invalidText}
+        </Banner>
+      </main>
+    );
+  }
+
   if (scannerState === 'idle') {
     return (
       <main className="page">
         <Logo />
         <h1 className="title">{t.title}</h1>
+        {session && (
+          <p className="lead">
+            <strong>{session.event.title}</strong>
+            <br />
+            {formatDateTime(session.event.startsAt)}
+          </p>
+        )}
         {listState === 'loading' && <p>{t.listLoading}</p>}
         {listState === 'missing' && (
           <p className="banner banner--error" role="alert">

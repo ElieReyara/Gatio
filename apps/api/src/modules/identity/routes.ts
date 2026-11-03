@@ -19,6 +19,12 @@ import { hashToken, newToken } from '../../lib/tokens.js';
 import type { EmailOutbox } from '../email/outbox.js';
 import { passwordResetEmail } from '../email/templates.js';
 import { clearBuyerCookie, currentBuyer } from '../buyers/auth.js';
+import {
+  clearScanCookie,
+  readScanToken,
+  revokeOrganizerScannerSessions,
+  revokeScannerSessionByToken,
+} from '../scanners/sessions.js';
 import { loadProfile } from './profile.js';
 import {
   clearSessionCookie,
@@ -149,8 +155,11 @@ export const identityRoutes =
         if (session) await revokeSession(db, session.sessionId);
         const buyer = await currentBuyer(db, request, null, secureCookies);
         if (buyer) await revokeSession(db, buyer.sessionId);
+        const scanToken = readScanToken(request);
+        if (scanToken) await revokeScannerSessionByToken(db, scanToken);
         clearSessionCookie(reply, secureCookies);
         clearBuyerCookie(reply, secureCookies);
+        clearScanCookie(reply, secureCookies);
         return reply.code(204).send(null);
       },
     );
@@ -232,6 +241,7 @@ export const identityRoutes =
             .set({ passwordHash, updatedAt: sql`now()` })
             .where(eq(users.id, reset.userId));
           await revokeAllUserSessions(tx, reset.userId);
+          await revokeOrganizerScannerSessions(tx, reset.userId);
           // Les autres liens encore valables de ce compte ne doivent plus servir.
           await tx
             .update(passwordResets)

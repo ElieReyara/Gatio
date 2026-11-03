@@ -12,7 +12,7 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | POST `/dev/scan-prototype/tickets` | public (développement seulement) | 1 | Billet « vendu après le téléchargement » | idem | Temporaire (outil d'essai) |
 | POST `/auth/register` | public (limité : 10/h par IP) | 2 | `registerRequestSchema` (email, mot de passe ≥ 8, **displayName**) → 201 profil + cookie de session | `identity.test.ts` | `displayName` ajouté (décision Q2, journal de bord n° 63) ; email déjà pris → 400 `VALIDATION_ERROR` `details.reason = already_registered` |
 | POST `/auth/login` | public (limité : 10 par email, 30 par IP / 15 min) | 2 | `loginRequestSchema` → 200 profil + cookie ; 401 `UNAUTHENTICATED` identique pour email inconnu | idem | Organisateurs seulement jusqu'à la tranche 14 (`MFA_REQUIRED` des comptes internes non construit) |
-| POST `/auth/logout` | organisateur ou acheteur | 2, 8 | → 204 ; **toutes** les sessions du navigateur (organisateur et acheteur) révoquées, les deux cookies effacés | `identity.test.ts`, `buyers.test.ts` | — |
+| POST `/auth/logout` | organisateur ou acheteur | 2, 8, 9 | → 204 ; **toutes** les sessions du navigateur (organisateur, acheteur, scan) révoquées, les trois cookies effacés | `identity.test.ts`, `buyers.test.ts` | — |
 | POST `/auth/password/forgot` | public (limité : 3 par email, 20 par IP / h) | 2 | `{email}` → 202 `{}` toujours ; recherche et envoi après la réponse | idem | — |
 | POST `/auth/password/reset` | public (limité : 20 par IP / h) | 2 | `{token, newPassword}` → 200 ; ferme toutes les sessions et les autres liens ; 400 `TOKEN_INVALID` | idem | — |
 | PUT `/organizer/profile` | organisateur | 3 | `profileUpdateSchema` (nom affiché, description, téléphone +235) → profil | `organizer.test.ts` | — |
@@ -48,6 +48,15 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | GET `/me/tickets` | acheteur | 8 | `myTicketsSchema` : `{items, nextCursor: null}`, un élément par événement (à venir d'abord, puis passés : commencés depuis plus d'un jour), commandes et billets dans l'ordre des PDF (`index`), statut de l'événement et des billets | idem | Pas de pagination (liste courte) |
 | GET `/me/tickets/{ticketId}/pdf` | acheteur (limité comme le PDF de commande) | 8 | PDF du billet du compte ; billet d'un autre compte, annulé ou commande non payée → 404 | idem | — |
 | GET `/events/{slug}` (ajout) | public | 8 | Champ `phoneVerification` : code SMS demandé avant de réserver (le site masque alors la double saisie) | `buyers.test.ts` | Ajout (un seul réglage, lu par le site auprès de l'API) |
+| POST `/organizer/events/{id}/scanner-invites` | organisateur | 9 | → 201 `scannerInviteCreatedSchema` `{invite: {id, createdAt, expiresAt, active}, token}` ; le jeton (256 bits) n'est rendu qu'ici, seule son empreinte est gardée ; expiration = début + 24 h ; 400 `event_closed` (annulé) ou `event_over` | `scanners.test.ts` | Le lien (`{site}/c#jeton`) est construit par le site |
+| GET `/organizer/events/{id}/scanner-invites` | organisateur | 9 | `{items}` (sans jeton), du plus récent au plus ancien, `active` = ni désactivé ni expiré | idem | — |
+| DELETE `/organizer/scanner-invites/{id}` | organisateur | 9 | → 204 ; désactive le lien et coupe les sessions ouvertes par lui (R29) ; rejouable | idem | — |
+| GET `/organizer/events/{id}/scanners` | organisateur | 9 | `{items: [{id, firstName, joinedAt, lastSeenAt, organizer}]}` : sessions valables seulement | idem | Sans porte (`gateId`) jusqu'à la tranche 11 |
+| DELETE `/organizer/scanner-sessions/{id}` | organisateur | 9 | → 204 ; retire un contrôleur (sa session seule ; il peut revenir avec un lien encore actif) | idem | PATCH `{gateId}` : tranche 11 |
+| POST `/organizer/events/{id}/scanner-session` | organisateur | 9 | → 201 `scanSessionSchema` + cookie `gatio_scan` ; session sans invitation, jusqu'à début + 24 h | idem | — |
+| POST `/scan/invite` | public (limité : 300 par adresse / 15 min, avec `/scan/join`) | 9 | `{inviteToken}` → `{event: {title, startsAt, venue, city}}` ; 400 `INVITE_INVALID` | idem | **Ajout** : C1 affiche l'événement avant la saisie du prénom ; jeton dans le corps, jamais dans une adresse |
+| POST `/scan/join` | public (lien valide, limité) | 9 | `{inviteToken, firstName}` (prénom 1 à 40 caractères) → `scanSessionSchema` `{firstName, expiresAt, event}` + cookie HttpOnly `gatio_scan` (ou `Authorization: Bearer`) ; 400 `INVITE_INVALID` (inconnu, désactivé, expiré, événement annulé) | idem | — |
+| GET `/scan/session` | scan | 9 | `scanSessionSchema` ; renouvelle le cookie ; 401 `UNAUTHENTICATED`, `details.reason = session_ended` si un jeton présenté ne vaut plus | idem | Sans porte affectée jusqu'à la tranche 11 |
 | GET `/openapi.json` | public | 0 | Document OpenAPI généré depuis les schémas Zod (routes cachées exclues) | `apps/api/src/app.test.ts` | Ajout : le contrat (§6.1) demande la documentation générée sans fixer son adresse |
 
 ## Codes d'erreur implémentés
@@ -57,6 +66,7 @@ Ce document ne liste que ce qui est **réellement implémenté et testé**. Base
 | `UNAUTHENTICATED` / `FORBIDDEN` / `RATE_LIMITED` | 401 / 403 / 429 (par correspondance de statut) | toutes |
 | `NOT_FOUND` | 404 | toute adresse inconnue |
 | `TOKEN_INVALID` | 400 | `/auth/password/reset`, `/email-verifications/confirm` |
+| `INVITE_INVALID` | 400 | `/scan/invite`, `/scan/join` (lien de contrôleur inconnu, désactivé, expiré, événement annulé) |
 | `PRICE_TOO_LOW` | 400 | création et modification de catégorie |
 | `FORBIDDEN` | 403 | toute modification d'une origine non autorisée (S2) |
 | `EVENT_NOT_ON_SALE` | 409 | POST `/orders` (événement non publié, reporté, annulé) |

@@ -72,10 +72,17 @@ export function OrganizerShell({
   );
 }
 
-export function EventTabs({ eventId, active }: { eventId: string; active: 'info' | 'tickets' }) {
+export function EventTabs({
+  eventId,
+  active,
+}: {
+  eventId: string;
+  active: 'info' | 'tickets' | 'scanners';
+}) {
   const tabs = [
     { key: 'info' as const, href: `/organisateur/evenements/${eventId}/infos` },
     { key: 'tickets' as const, href: `/organisateur/evenements/${eventId}/billets` },
+    { key: 'scanners' as const, href: `/organisateur/evenements/${eventId}/controleurs` },
   ];
   return (
     <nav className="tabs">

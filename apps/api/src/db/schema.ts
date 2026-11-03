@@ -599,3 +599,43 @@ export const outboundMessages = pgTable(
     index('outbound_messages_created_at_idx').on(table.createdAt),
   ],
 );
+
+// Contrôleurs invités (R29, tranche 9). Portes et affectation (gate_id) : tranche 11.
+export const scannerInvites = pgTable(
+  'scanner_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [index('scanner_invites_event_id_idx').on(table.eventId)],
+);
+
+export const scannerSessions = pgTable(
+  'scanner_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    // Vide pour l'organisateur qui scanne lui-même.
+    inviteId: uuid('invite_id').references(() => scannerInvites.id),
+    firstName: text('first_name').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index('scanner_sessions_event_id_idx').on(table.eventId),
+    index('scanner_sessions_invite_id_idx').on(table.inviteId),
+  ],
+);

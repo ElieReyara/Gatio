@@ -134,7 +134,46 @@ export const texts = {
   // (journal de bord n° 64), à valider au point de contrôle PC-3.
   space: {
     nav: { events: 'Événements', payouts: 'Reversements', profile: 'Profil' },
-    tabs: { info: 'Infos', tickets: 'Billets' },
+    tabs: { info: 'Infos', tickets: 'Billets', scanners: 'Contrôleurs' },
+    // Onglet « Contrôleurs » (maquette O7, tranche 9).
+    scanners: {
+      inviteTitle: 'Inviter un contrôleur',
+      inviteHelp: 'Le lien expire 24 h après le début de l’événement.',
+      create: 'Créer un lien d’invitation',
+      creating: 'Création du lien…',
+      copy: 'Copier le lien',
+      copied: 'Lien copié',
+      share: 'Partager sur WhatsApp',
+      shareText: (title: string, url: string) =>
+        `Contrôle des entrées de « ${title} » sur Gatio : ouvrez ce lien pour scanner les billets ${url}`,
+      qrAlt: 'QR code du lien d’invitation',
+      otherDevice:
+        'Un lien est déjà actif, mais il a été créé sur un autre appareil : il ne peut pas être affiché ici. Créez-en un nouveau pour le partager depuis cet appareil.',
+      listTitle: (count: number) => `Contrôleurs (${count})`,
+      empty:
+        'Aucun contrôleur pour l’instant. Ils apparaîtront ici dès qu’ils auront ouvert le lien.',
+      active: 'Actif',
+      you: 'Vous',
+      joinedToday: (time: string) => `A rejoint à ${time}`,
+      joinedOn: (date: string) => `A rejoint le ${date}`,
+      remove: 'Retirer',
+      removeHint:
+        'Un contrôleur retiré peut revenir avec le même lien : pour l’en empêcher, désactivez le lien et créez-en un nouveau.',
+      removeLabel: (name: string) => `Retirer ${name}`,
+      linksTitle: 'Liens actifs',
+      linkLine: (created: string, expires: string) => `Créé le ${created} · expire le ${expires}`,
+      deactivate: 'Désactiver',
+      deactivateLabel: (created: string) => `Désactiver le lien créé le ${created}`,
+      deactivateTitle: 'Désactiver ce lien ?',
+      deactivateText:
+        'Le lien ne fonctionnera plus et les contrôleurs qui l’ont ouvert ne pourront plus scanner.',
+      deactivateConfirm: 'Désactiver le lien',
+      back: 'Non, revenir en arrière',
+      selfScan: 'Scanner moi-même',
+      selfScanHelp: 'Contrôlez les billets avec ce téléphone, sans invitation.',
+      closed: 'Cet événement est annulé ou terminé : il n’y a plus d’entrée à contrôler.',
+      unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
+    },
     back: 'Retour',
     fixCount: (count: number) =>
       count === 1 ? '1 information à corriger.' : `${count} informations à corriger.`,
@@ -551,6 +590,18 @@ export const texts = {
     emptyText: 'Vérifiez le numéro utilisé lors de l’achat.',
     otherPhone: 'Essayer un autre numéro',
     logout: 'Me déconnecter',
+    unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
+  },
+  // Rejoindre le contrôle des entrées par un lien d'invitation (maquette C1, tranche 9).
+  join: {
+    checking: 'Vérification du lien…',
+    firstName: 'Votre prénom',
+    firstNamePlaceholder: 'Ali',
+    firstNameMissing: 'Indiquez votre prénom : l’organisateur saura qui a scanné.',
+    joining: 'Ouverture…',
+    tooMany: 'Trop d’essais depuis ce réseau. Réessayez dans quelques minutes.',
+    invalidStrong: 'Ce lien n’est plus valable.',
+    invalidText: 'Demandez un nouveau lien à l’organisateur.',
     unavailable: 'Le service est indisponible pour le moment. Réessayez dans quelques minutes.',
   },
   // Validation de l'email (maquette B9).

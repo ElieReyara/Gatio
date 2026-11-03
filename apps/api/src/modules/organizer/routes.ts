@@ -31,6 +31,7 @@ import { resolveFeeRule } from '../fees/rules.js';
 import { requireOrganizer } from '../identity/auth.js';
 import { loadProfile } from '../identity/profile.js';
 import { toEventImage } from '../media/images.js';
+import { syncInviteExpiry } from '../scanners/sessions.js';
 import type { StoragePort } from '../media/storage.js';
 
 export type OrganizerDependencies = { db: Db; storage: StoragePort; secureCookies: boolean };
@@ -249,6 +250,7 @@ export const organizerRoutes =
           if (dateChanged && event.status === 'postponed') {
             await writeAudit(tx, auditEntry(request, 'event.reschedule', event, row!));
           }
+          if (dateChanged) await syncInviteExpiry(tx, event.id, row!.startsAt);
           return row!;
         });
         return eventDetail(db, updated);
@@ -579,7 +581,7 @@ function auditEntry(
 }
 
 // S5 : un organisateur ne voit que ses événements ; un autre reçoit « introuvable ».
-async function ownedEvent(
+export async function ownedEvent(
   db: DbOrTx,
   organizerId: string,
   eventId: string,

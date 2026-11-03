@@ -22,7 +22,7 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | 8 | Reconnexion par SMS et « mes billets » | Moyenne | 7 | Billets retrouvés par code ; pas d'accès aux billets d'autrui ; réponse identique | PC-8 (essai A ✔) | terminé (27/10/2026 ; premier vrai SMS et D1 reportés) |
 | 8b | Affichage sur ordinateur et circulation (demande du responsable au PC-8) | Haute | 8 | Mise en page ordinateur sans changer le téléphone ; en-tête et pied communs ; code vérifié sans bouton | PC-8b ✔ | terminé (03/11/2026 ; retouches graphiques plus tard) |
 | 9 | Contrôleurs invités | Haute | 3 | Lien révoqué ou expiré refusé, sessions coupées | (PC-10) | en attente de contrôle (construite le 03/11/2026, contrôle au PC-10) |
-| 10 | Scan complet et synchronisation | Haute | 6, 9, 1 | Grille manuelle iPhone + Android réussie | PC-10 | à faire |
+| 10 | Scan complet et synchronisation | Haute | 6, 9, 1 | Grille manuelle iPhone + Android réussie | PC-10 | en attente de contrôle (construite le 03/11/2026) |
 | 11 | Portes et affectation (facultatif) | Basse | 10 | Sans affectation, rien ne change | PC-11 | à faire |
 | 12 | Tableau de bord et export | Moyenne | 6 | Chiffres exacts ; CSV protégé ; isolation testée | PC-12 | à faire |
 | 13 | Reversements | Moyenne | 6 | 1 versement exact par commande ; relance sans double envoi | PC-13 | à faire |

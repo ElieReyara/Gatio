@@ -8,6 +8,7 @@ import { Logo } from '@/components/Logo';
 import { postJson } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/format';
 import { texts } from '@/texts/fr';
+import { flushPendingPassages } from './network';
 import { markJoined } from './session';
 
 const t = texts.join;
@@ -55,6 +56,8 @@ export function JoinScreen() {
     }
     setBusy(true);
     setFailure(null);
+    // Passages d'un contrôle précédent sur ce téléphone : envoyés avant de changer de session.
+    await flushPendingPassages();
     const result = await postJson('/scan/join', { inviteToken: token.current, firstName });
     if (result.ok) {
       markJoined();

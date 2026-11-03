@@ -1,4 +1,5 @@
 import { fromBase64Url, parseTicketQr, type ScanManifest } from '@gatio/shared';
+import { earliest } from './sync';
 import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2.js';
 
@@ -53,8 +54,14 @@ export function verifyTicket(
 
   const ticket = manifest.tickets.get(parsed.ticketId);
   if (ticket?.status === 'void') return { kind: 'void' };
-  const firstPassageAt = localPassages.get(parsed.ticketId) ?? null;
-  if (ticket?.status === 'used' || firstPassageAt) return { kind: 'already_used', firstPassageAt };
+  // Premier passage : le plus ancien, de ce téléphone ou reçu du serveur (autre téléphone).
+  const firstPassageAt = earliest(
+    localPassages.get(parsed.ticketId) ?? null,
+    ticket?.usedAt ?? null,
+  );
+  if (ticket?.status === 'used' || localPassages.has(parsed.ticketId)) {
+    return { kind: 'already_used', firstPassageAt };
+  }
   return { kind: 'valid', categoryName: manifest.categories.get(parsed.categoryId) ?? '' };
 }
 

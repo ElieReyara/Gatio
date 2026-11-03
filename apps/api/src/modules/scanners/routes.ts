@@ -1,5 +1,11 @@
 import {
+  entryReportSchema,
   errorResponseSchema,
+  scanChangesQuerySchema,
+  scanChangesSchema,
+  scanManifestSchema,
+  scanPassagesRequestSchema,
+  scanPassagesResponseSchema,
   scanInviteCheckSchema,
   scanInviteInfoSchema,
   scanJoinSchema,
@@ -19,6 +25,8 @@ import { consumeLimit, ipSubject } from '../../lib/rate-limit.js';
 import { hashToken, newToken } from '../../lib/tokens.js';
 import { requireOrganizer } from '../identity/auth.js';
 import { ownedEvent } from '../organizer/routes.js';
+import type { TicketSigner } from '../tickets/signing.js';
+import { changesSince, entryReport, loadManifest, recordPassages } from './scan.js';
 import {
   CLOSED_STATUS,
   eventEnd,
@@ -185,6 +193,16 @@ export const scannerOrganizerRoutes =
       },
     );
 
+    // Rapport d'entrée (maquette O8) : entrées, doublons, téléphones à jour, derniers passages.
+    app.get(
+      '/organizer/events/:id/entry-report',
+      { schema: { params: idParams, response: { 200: entryReportSchema, ...errors } } },
+      async (request) => {
+        const event = await ownedEvent(db, me(request).organizerId, request.params.id);
+        return entryReport(db, event.id);
+      },
+    );
+
     // R29 : l'organisateur scanne avec sa propre session, sans invitation.
     app.post(
       '/organizer/events/:id/scanner-session',
@@ -212,7 +230,15 @@ export const scannerOrganizerRoutes =
 
 // Contrat §6.5 : rejoindre par un lien (maquette C1), session de scan.
 export const scanRoutes =
-  ({ db, secureCookies }: { db: Db; secureCookies: boolean }): FastifyPluginAsyncZod =>
+  ({
+    db,
+    secureCookies,
+    signer,
+  }: {
+    db: Db;
+    secureCookies: boolean;
+    signer: TicketSigner;
+  }): FastifyPluginAsyncZod =>
   async (app) => {
     const invalid = () => new AppError(400, 'INVITE_INVALID', 'Ce lien n’est plus valable.');
     const limit = async (ip: string) => {
@@ -299,6 +325,46 @@ export const scanRoutes =
           expiresAt: session.expiresAt.toISOString(),
           event: scanEvent(session.event),
         };
+      },
+    );
+
+    // R24 : liste du scan de l'événement de la session (téléchargement enregistré).
+    app.get(
+      '/scan/manifest',
+      { schema: { response: { 200: scanManifestSchema, ...errors } } },
+      async (request) => {
+        const session = await requireScanner(db, request);
+        return loadManifest(db, signer, session);
+      },
+    );
+
+    // R26 : lot de passages rejouable ; résultat par passage.
+    app.post(
+      '/scan/passages',
+      {
+        schema: {
+          body: scanPassagesRequestSchema,
+          response: { 200: scanPassagesResponseSchema, ...errors },
+        },
+      },
+      async (request) => {
+        const session = await requireScanner(db, request);
+        return { results: await recordPassages(db, signer, session, request.body.passages) };
+      },
+    );
+
+    // R27 : billets changés depuis le curseur (chevauchement de 30 s).
+    app.get(
+      '/scan/changes',
+      {
+        schema: {
+          querystring: scanChangesQuerySchema,
+          response: { 200: scanChangesSchema, ...errors },
+        },
+      },
+      async (request) => {
+        const session = await requireScanner(db, request);
+        return changesSince(db, session.eventId, new Date(request.query.since));
       },
     );
   };

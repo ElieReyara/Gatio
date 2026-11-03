@@ -29,7 +29,6 @@ import type { PaymentPort } from './modules/payments/port.js';
 import { paymentRoutes, paymentWebhookRoutes } from './modules/payments/routes.js';
 import { publicRoutes } from './modules/public/routes.js';
 import { scannerOrganizerRoutes, scanRoutes } from './modules/scanners/routes.js';
-import { scanPrototypeRoutes } from './modules/scan-prototype/routes.js';
 import type { SmsPort } from './modules/sms/port.js';
 import { ticketRoutes } from './modules/tickets/routes.js';
 import type { TicketSigner } from './modules/tickets/signing.js';
@@ -158,12 +157,17 @@ export async function buildApp({
       await api.register(
         scannerOrganizerRoutes({ db, secureCookies: config.nodeEnv === 'production' }),
       );
-      await api.register(scanRoutes({ db, secureCookies: config.nodeEnv === 'production' }));
+      await api.register(
+        scanRoutes({
+          db,
+          secureCookies: config.nodeEnv === 'production',
+          signer: ticketSigner,
+        }),
+      );
       await api.register(paymentRoutes(db, payments));
       await api.register(ticketRoutes(db, ticketSigner));
       await api.register(paymentWebhookRoutes(db, payments, onNotification));
       if (config.nodeEnv !== 'production') {
-        await api.register(scanPrototypeRoutes(ticketSigner), { prefix: '/dev/scan-prototype' });
         if (isFake(payments)) {
           await api.register(
             fakePaymentDevRoutes(payments, async (notification) => {

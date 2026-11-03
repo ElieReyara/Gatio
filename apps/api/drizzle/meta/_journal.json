@@ -99,6 +99,13 @@
       "when": 1793714818646,
       "tag": "0013_scanner_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793718944921,
+      "tag": "0014_scan_passages",
+      "breakpoints": true
     }
   ]
 }

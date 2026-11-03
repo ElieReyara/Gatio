@@ -46,26 +46,8 @@ export const texts = {
     invalidDetail: 'Ce QR code n’est pas un billet de cet événement',
     void: 'BILLET ANNULÉ',
     voidDetail: 'Commande remboursée',
-  },
-  // Page d'essai du prototype (développement seulement, sans maquette : outil interne).
-  prototype: {
-    // Critère de la tranche 7 : le PDF du billet se scanne avec cette page.
-    samplePdf: 'Billet Standard n° 1 en PDF (essai d’impression et de scan)',
-    title: 'Billets d’essai du scan',
-    intro:
-      'Billets fictifs signés par l’API. Ouvrez la page de scan sur le téléphone, laissez-la télécharger la liste, puis visez ces QR codes.',
-    expected: 'Résultat attendu',
-    density: (modules: number, version: number) =>
-      `QR version ${version} : ${modules} × ${modules} modules`,
-    createAfterDownload: 'Créer un billet vendu après le téléchargement',
-    creating: 'Création en cours…',
-    expectedLabels: {
-      valid: 'vert, VALIDE',
-      already_used: 'orange, DÉJÀ UTILISÉ',
-      void: 'rouge, BILLET ANNULÉ',
-      invalid: 'rouge, INVALIDE',
-    },
-    unavailable: 'L’API ne répond pas : lancez-la avec pnpm dev.',
+    // Page de scan ouverte sans invitation (aucune maquette : phrase de C1).
+    noSession: 'Ouvrez le lien d’invitation reçu de l’organisateur pour contrôler les entrées.',
   },
   form: {
     show: 'Afficher',
@@ -135,6 +117,33 @@ export const texts = {
   space: {
     nav: { events: 'Événements', payouts: 'Reversements', profile: 'Profil' },
     tabs: { info: 'Infos', tickets: 'Billets', scanners: 'Contrôleurs' },
+    // Rapport d'entrée (maquette O8, tranche 10).
+    entryReport: {
+      title: 'Rapport d’entrée',
+      link: 'Voir le rapport d’entrée',
+      entered: 'Entrées',
+      enteredValue: (entered: number, sold: number) => `${entered} / ${sold}`,
+      duplicates: 'Doublons signalés',
+      lists: 'Listes téléchargées',
+      phones: (count: number) =>
+        count === 0
+          ? 'Aucun téléphone n’a la liste à jour.'
+          : count === 1
+            ? '1 téléphone a la liste à jour.'
+            : `${count} téléphones ont la liste à jour.`,
+      latest: 'Derniers passages',
+      unknownTicket: 'QR code non reconnu',
+      outcomes: {
+        accepted: 'Entrée',
+        duplicate: 'Doublon',
+        unknown_ticket: 'Inconnu',
+        void_ticket: 'Annulé',
+        wrong_event: 'Autre événement',
+      },
+      alreadyUsedAt: (time: string) => `déjà utilisé à ${time}`,
+      emptyTitle: 'Aucun passage enregistré',
+      emptyText: 'Les entrées apparaîtront ici dès que vos contrôleurs commenceront à scanner.',
+    },
     // Onglet « Contrôleurs » (maquette O7, tranche 9).
     scanners: {
       inviteTitle: 'Inviter un contrôleur',

@@ -5,6 +5,12 @@ import { formatDateTime } from '@gatio/shared';
 export { formatDateTime, formatMoney, formatNumber, formatPercent } from '@gatio/shared';
 const CHAD_OFFSET = '+01:00';
 
+// « 21 h 14 » (maquettes O7 et O8 : heure seule).
+export function formatTime(iso: string): string {
+  const text = formatDateTime(iso);
+  return text.slice(text.lastIndexOf(', ') + 2);
+}
+
 // « samedi 14 novembre à 8 h » (maquette B2 : ouverture d'une catégorie).
 export function formatOpening(iso: string): string {
   const text = formatDateTime(iso).replace(', ', ' à ');

@@ -284,6 +284,12 @@ describe('code de connexion (R31, B6, M1)', () => {
   });
 
   it('limites d’envoi : 1 par minute, 3 par 15 minutes pour un numéro', async () => {
+    // Compteurs par fenêtre fixe (minute, quart d'heure, jour) : le test ne démarre pas à
+    // cheval sur un changement de minute, sinon deux demandes tombent dans deux fenêtres
+    // (ERR-019).
+    const { rows } = await pool.query('select extract(second from now())::float as seconds');
+    const seconds = rows[0].seconds as number;
+    if (seconds > 57) await new Promise((resolve) => setTimeout(resolve, (61 - seconds) * 1000));
     expect((await requestCode(VICTIM)).statusCode).toBe(202);
     expect((await requestCode(VICTIM)).statusCode).toBe(429);
     await nextMinute();

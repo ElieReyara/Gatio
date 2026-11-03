@@ -38,9 +38,9 @@ const manifest: ScanManifest = {
   keys: [{ keyId: 1, publicKey }],
   categories: [{ id: STANDARD, name: 'Standard' }],
   tickets: [
-    { id: ids.valid, categoryId: STANDARD, status: 'valid' },
-    { id: ids.used, categoryId: STANDARD, status: 'used' },
-    { id: ids.void, categoryId: STANDARD, status: 'void' },
+    { id: ids.valid, categoryId: STANDARD, status: 'valid', usedAt: null },
+    { id: ids.used, categoryId: STANDARD, status: 'used', usedAt: '2026-10-22T19:02:00.000Z' },
+    { id: ids.void, categoryId: STANDARD, status: 'void', usedAt: null },
   ],
   cursor: '2026-10-22T08:00:00.000Z',
 };
@@ -59,10 +59,10 @@ describe('vérification locale d’un billet (R25)', () => {
     expect(verifyTicket(qr(ids.soldAfterDownload), prepared, none).kind).toBe('valid');
   });
 
-  it('signale un billet déjà utilisé selon la liste', () => {
+  it('signale un billet déjà utilisé selon la liste, avec l’heure de son passage', () => {
     expect(verifyTicket(qr(ids.used), prepared, none)).toEqual({
       kind: 'already_used',
-      firstPassageAt: null,
+      firstPassageAt: '2026-10-22T19:02:00.000Z',
     });
   });
 

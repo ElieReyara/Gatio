@@ -7,7 +7,7 @@ import { buildApp } from '../../src/app.js';
 import * as schema from '../../src/db/schema.js';
 import type { EmailMessage, EmailPort } from '../../src/modules/email/port.js';
 import type { FakePaymentProvider } from '../../src/modules/payments/fake-provider.js';
-import { sendQueuedTicketEmails } from '../../src/modules/tickets/email.js';
+import { sendQueuedTicketEmails, type TicketEmailDeps } from '../../src/modules/tickets/email.js';
 import { buyerCookie, testDependencies, testOrigin } from '../../src/test-support.js';
 import { testDatabaseUrl } from './database.js';
 
@@ -27,11 +27,17 @@ const mailbox: EmailPort = {
     sent.push(message);
   },
 };
+// Erreurs d'envoi affichées : un échec ponctuel de ce test a eu lieu sans trace (ERR-018).
+const log = {
+  error: (...args: unknown[]) => console.error('ticket email', ...args),
+  warn: (...args: unknown[]) => console.warn('ticket email', ...args),
+} as unknown as TicketEmailDeps['log'];
 const send = () =>
   sendQueuedTicketEmails(db, {
     email: mailbox,
     signer: deps.ticketSigner,
     webUrl: 'http://localhost:3000',
+    log,
   });
 
 function call(options: InjectOptions & { cookie?: string }) {
@@ -201,13 +207,6 @@ describe('accès au PDF', () => {
     expect((await pdf(a.orderId, ticketA!.id, a.orderToken)).statusCode).toBe(200);
     await pool.query('update tickets set status = $1 where id = $2', ['void', ticketA!.id]);
     expect((await pdf(a.orderId, ticketA!.id, a.orderToken)).statusCode).toBe(404);
-  });
-
-  it('billet d’essai en PDF (critère « le PDF se scanne avec la page de la tranche 1 »)', async () => {
-    const response = await app.inject({ url: '/api/v1/dev/scan-prototype/sample.pdf' });
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toBe('application/pdf');
-    expect(response.rawPayload.subarray(0, 5).toString()).toBe('%PDF-');
   });
 });
 

@@ -3,6 +3,8 @@
 import {
   parseTicketQr,
   SCAN_SESSION_ENDED,
+  errorResponseSchema,
+  scanChangesSchema,
   scanManifestSchema,
   scanSessionSchema,
   type ScanManifest,
@@ -14,21 +16,32 @@ import { Banner } from '@/components/Banner';
 import { Icon, type IconName } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
 import { getJson } from '@/lib/api-client';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatTime } from '@/lib/format';
 import { texts } from '@/texts/fr';
 import { playSignal, resumeAudio, unlockAudio, type Signal } from './feedback';
-import { addPassage, listPassages, loadManifest, saveManifest, type LocalPassage } from './storage';
+import { scanRequest, sendPassages } from './network';
+import {
+  addPassage,
+  listPassages,
+  loadManifest,
+  removePassages,
+  saveManifest,
+  type LocalPassage,
+} from './storage';
 import { hasJoined, markJoined } from './session';
+import { applyResults, firstValidPassages, mergeTickets, nextBatch, otherEvents } from './sync';
 import { prepareManifest, verifyTicket, type PreparedManifest, type ScanOutcome } from './verify';
 
 const t = texts.scan;
-// Liste fictive du prototype (tranche 1) ; remplacée par /api/v1/scan/manifest en tranche 10.
-const MANIFEST_URL = '/api/v1/dev/scan-prototype/manifest';
+const MANIFEST_URL = '/api/v1/scan/manifest';
 const MANIFEST_TIMEOUT_MS = 10_000;
 const RESULT_MS = 1200;
-const SAME_QR_PAUSE_MS = 3000;
+// Un QR laissé devant la caméra n'est relu qu'après 8 s : pas de doublon parasite.
+const SAME_QR_PAUSE_MS = 8000;
 // Session de scan revérifiée en ligne : un contrôleur retiré ou un lien désactivé est vu vite.
 const SESSION_CHECK_MS = 60_000;
+// R27 : passages envoyés et changements demandés toutes les 5 s en ligne.
+const SYNC_MS = 5000;
 
 type ListState = 'loading' | 'ready' | 'missing';
 type ScannerState = 'idle' | 'loading' | 'running' | 'camera-error' | 'load-error';
@@ -41,11 +54,19 @@ export function ScanScreen() {
   const [scannerState, setScannerState] = useState<ScannerState>('idle');
   const [shown, setShown] = useState<Shown | null>(null);
   const [lastVerifyMs, setLastVerifyMs] = useState<number | null>(null);
-  // Session du contrôleur (tranche 9) ; sans elle et sans invitation passée : prototype.
+  // Session du contrôleur (tranche 9).
   const [session, setSession] = useState<ScanSession | null>(null);
   const [revoked, setRevoked] = useState(false);
+  // Page ouverte sans invitation ni liste sur ce téléphone.
+  const [noSession, setNoSession] = useState(false);
 
   const manifest = useRef<PreparedManifest | null>(null);
+  // Liste telle qu'enregistrée (curseur des changements compris), pour la mettre à jour.
+  const raw = useRef<ScanManifest | null>(null);
+  const syncing = useRef(false);
+  const ended = useRef(false);
+  // Passages que le stockage n'a pas pu garder : envoyés depuis la mémoire, sans être perdus.
+  const unsaved = useRef<LocalPassage[]>([]);
   const firstPassages = useRef(new Map<string, string>());
   const video = useRef<HTMLVideoElement>(null);
   const scanner = useRef<QrScanner | null>(null);
@@ -61,7 +82,10 @@ export function ScanScreen() {
     document.addEventListener('visibilitychange', resumeAudio);
 
     const applyManifest = (value: ScanManifest | null) => {
-      if (value) manifest.current = prepareManifest(value);
+      if (value) {
+        raw.current = value;
+        manifest.current = prepareManifest(value);
+      }
       setListState(manifest.current ? 'ready' : 'missing');
     };
     void (async () => {
@@ -73,7 +97,32 @@ export function ScanScreen() {
       firstPassages.current = firstValidPassages(passages);
       setPending(passages.length);
       if (stored) applyManifest(stored);
-      applyManifest(await downloadManifest());
+      const fresh = await downloadManifest();
+      if (fresh === 'ended') {
+        ended.current = true;
+        setRevoked(true);
+        return;
+      }
+      if (fresh === 'none') {
+        if (!stored) setNoSession(true);
+        applyManifest(null);
+        return;
+      }
+      if (!fresh) {
+        applyManifest(null);
+        return;
+      }
+      // Passages d'un autre événement : ils ne peuvent plus partir (la page « rejoindre » et
+      // « scanner moi-même » les envoient avant d'ouvrir une autre session).
+      const stale = otherEvents(passages, fresh.eventId);
+      if (stale.length > 0) {
+        await removePassages(stale).catch(() => undefined);
+        const kept = passages.filter((passage) => !stale.includes(passage.id));
+        firstPassages.current = firstValidPassages(kept);
+        setPending(kept.length);
+      }
+      await saveManifest(fresh).catch(() => undefined);
+      applyManifest(fresh);
     })();
     // Le lecteur de QR est chargé à la demande : on le charge dès maintenant, en ligne,
     // pour que le service worker le garde avant tout passage en mode avion.
@@ -102,6 +151,7 @@ export function ScanScreen() {
         result.status === 401 &&
         (result.error?.details.reason === SCAN_SESSION_ENDED || hasJoined())
       ) {
+        ended.current = true;
         setRevoked(true);
         scanner.current?.stop();
       }
@@ -112,6 +162,70 @@ export function ScanScreen() {
     return () => {
       clearInterval(timer);
       window.removeEventListener('online', check);
+    };
+  }, []);
+
+  // Envoi des passages en attente puis changements depuis le curseur (R26, R27).
+  useEffect(() => {
+    const sync = async () => {
+      if (!navigator.onLine || syncing.current || ended.current || !raw.current) return;
+      syncing.current = true;
+      try {
+        const current = raw.current;
+        const prepared = manifest.current;
+        if (!prepared) return;
+        const stored = await listPassages().catch(() => [] as LocalPassage[]);
+        const { batch, invalid } = nextBatch([...stored, ...unsaved.current], current.eventId);
+        if (invalid.length > 0) await removePassages(invalid).catch(() => undefined);
+        let listChanged = false;
+        if (batch.length > 0) {
+          const results = await sendPassages(batch);
+          if (results) {
+            // La liste locale garde les billets passés avant que leurs passages quittent la file.
+            listChanged = applyResults(prepared, batch, results);
+            const saved =
+              !listChanged ||
+              (await saveManifest({ ...current, tickets: [...prepared.tickets.values()] }).then(
+                () => true,
+                () => false,
+              ));
+            if (saved) {
+              const sent = new Set(results.map((result) => result.id));
+              unsaved.current = unsaved.current.filter((passage) => !sent.has(passage.id));
+              await removePassages([...sent]);
+              setPending(
+                (await listPassages().catch(() => [] as LocalPassage[])).length +
+                  unsaved.current.length,
+              );
+            }
+          }
+        }
+        const changed = await scanRequest(
+          `/scan/changes?since=${encodeURIComponent(current.cursor)}`,
+        );
+        // Une nouvelle liste est arrivée pendant l'appel : celle-ci est périmée.
+        if (raw.current !== current) return;
+        const changes = changed.ok ? scanChangesSchema.safeParse(changed.data) : null;
+        if (changes?.success) {
+          listChanged = mergeTickets(prepared, changes.data.tickets) || listChanged;
+          raw.current = { ...current, cursor: changes.data.cursor };
+          // Rien de changé : la liste n'est pas réécrite (elle peut compter 20 000 billets).
+          if (listChanged) {
+            raw.current = { ...raw.current, tickets: [...prepared.tickets.values()] };
+            await saveManifest(raw.current).catch(() => undefined);
+          }
+        }
+      } catch {
+        // Stockage ou réseau en échec : les passages restent en file, nouvel essai plus tard.
+      } finally {
+        syncing.current = false;
+      }
+    };
+    const timer = setInterval(() => void sync(), SYNC_MS);
+    window.addEventListener('online', sync);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('online', sync);
     };
   }, []);
 
@@ -132,12 +246,26 @@ export function ScanScreen() {
         const startedAt = performance.now();
         const outcome = verifyTicket(text, prepared, firstPassages.current);
         const verifyMs = Math.round(performance.now() - startedAt);
-        const ticketId = parseTicketQr(text)?.ticketId ?? null;
+        // Un QR refusé n'envoie ni identifiant de billet ni QR (signature non vérifiée).
+        const refused = outcome.kind === 'invalid';
+        const ticketId = refused ? null : (parseTicketQr(text)?.ticketId ?? null);
         const scannedAt = new Date().toISOString();
         if (outcome.kind === 'valid' && ticketId) firstPassages.current.set(ticketId, scannedAt);
-        const passage = { id: newId(), ticketId, scannedAt, localResult: outcome.kind, verifyMs };
-        // Le compteur ne bouge que si le passage est réellement enregistré.
-        void addPassage(passage).then(() => setPending((count) => count + 1));
+        const passage: LocalPassage = {
+          id: newId(),
+          eventId: prepared.eventId,
+          ticketId,
+          scannedAt,
+          localResult: outcome.kind,
+          verifyMs,
+          qr: refused ? null : text.trim(),
+        };
+        // Stockage en échec : le passage part depuis la mémoire tant que la page est ouverte.
+        void addPassage(passage)
+          .catch(() => {
+            unsaved.current.push(passage);
+          })
+          .then(() => setPending((count) => count + 1));
 
         lastQr.current = { text, until: Date.now() + RESULT_MS + SAME_QR_PAUSE_MS };
         setLastVerifyMs(verifyMs);
@@ -206,6 +334,16 @@ export function ScanScreen() {
         <Banner kind="error">
           <strong>{texts.join.invalidStrong}</strong> {texts.join.invalidText}
         </Banner>
+      </main>
+    );
+  }
+
+  if (noSession) {
+    return (
+      <main className="page">
+        <Logo />
+        <h1 className="title">{t.title}</h1>
+        <Banner kind="info">{t.noSession}</Banner>
       </main>
     );
   }
@@ -326,37 +464,24 @@ function display(outcome: ScanOutcome): {
   }
 }
 
-// « 19 h 42 » (système de design : heures en toutes lettres).
-function formatTime(iso: string): string {
-  const date = new Date(iso);
-  return `${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-async function downloadManifest(): Promise<ScanManifest | null> {
+// Liste de la session : 'ended' si la session a été coupée, 'none' sans session, null si le
+// réseau ne répond pas (la liste enregistrée reste en service).
+async function downloadManifest(): Promise<ScanManifest | 'ended' | 'none' | null> {
   if (!navigator.onLine) return null;
   try {
     const response = await fetch(MANIFEST_URL, {
       cache: 'no-store',
       signal: AbortSignal.timeout(MANIFEST_TIMEOUT_MS),
     });
-    const fresh = scanManifestSchema.parse(await response.json());
-    // Stockage local indisponible : la liste reste utilisable tant que la page est ouverte.
-    await saveManifest(fresh).catch(() => undefined);
-    return fresh;
+    if (response.status === 401) {
+      const body = errorResponseSchema.safeParse(await response.json().catch(() => null));
+      const ended = body.success && body.data.error.details.reason === SCAN_SESSION_ENDED;
+      return ended || hasJoined() ? 'ended' : 'none';
+    }
+    return scanManifestSchema.parse(await response.json());
   } catch {
-    // Réseau lent ou coupé : la liste déjà enregistrée reste en service.
     return null;
   }
-}
-
-function firstValidPassages(passages: LocalPassage[]): Map<string, string> {
-  const first = new Map<string, string>();
-  for (const passage of [...passages].sort((a, b) => a.scannedAt.localeCompare(b.scannedAt))) {
-    if (passage.localResult === 'valid' && passage.ticketId && !first.has(passage.ticketId)) {
-      first.set(passage.ticketId, passage.scannedAt);
-    }
-  }
-  return first;
 }
 
 // crypto.randomUUID manque sur les iPhone antérieurs à iOS 15.4.

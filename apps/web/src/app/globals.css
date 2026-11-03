@@ -1333,6 +1333,25 @@ button.shell-back {
   align-self: center;
 }
 
+/* Rapport d'entrée (maquette O8). */
+.badge--success {
+  background: var(--success-tint);
+  color: var(--success);
+}
+
+.entry-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.entry-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 /* Mise en page commune et ordinateur (demande du responsable, 27/10/2026, sans maquette).
    Le téléphone garde les maquettes ; au-delà de 900 px, en-tête et pied sur toute la
    largeur, contenus alignés sur une même colonne de 1 120 px. */

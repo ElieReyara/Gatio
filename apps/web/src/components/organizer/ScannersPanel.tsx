@@ -12,7 +12,9 @@ import { useEffect, useState } from 'react';
 import { Banner } from '@/components/Banner';
 import { Sheet } from '@/components/Sheet';
 import { postJson, sendJson } from '@/lib/api-client';
-import { formatOpening, toChadInput } from '@/lib/format';
+import Link from 'next/link';
+import { formatOpening, formatTime, toChadInput } from '@/lib/format';
+import { flushPendingPassages } from '@/scan/network';
 import { markJoined } from '@/scan/session';
 import { texts } from '@/texts/fr';
 
@@ -124,6 +126,8 @@ export function ScannersPanel({
     if (busy) return;
     setBusy(true);
     setFailure(null);
+    // Passages d'un contrôle précédent sur ce téléphone : envoyés avant de changer de session.
+    await flushPendingPassages();
     const result = await postJson(`/organizer/events/${event.id}/scanner-session`);
     if (result.ok) {
       markJoined();
@@ -231,6 +235,9 @@ export function ScannersPanel({
         {t.selfScan}
       </button>
       <p className="fine-print fine-print--left">{t.selfScanHelp}</p>
+      <Link className="link link--left" href={`/organisateur/evenements/${event.id}/entrees`}>
+        {texts.space.entryReport.link}
+      </Link>
 
       {active.length > 0 && (
         <section className="stack stack--tight" aria-labelledby="liens">
@@ -279,9 +286,6 @@ export function ScannersPanel({
 // « A rejoint à 17 h 52 » (maquette O7) ; un autre jour : « A rejoint le lundi 2 novembre à 17 h 52 ».
 function joinedText(iso: string): string {
   const day = (value: string) => toChadInput(value).slice(0, 10);
-  const opening = formatOpening(iso);
-  if (day(iso) === day(new Date().toISOString())) {
-    return t.joinedToday(opening.slice(opening.indexOf(' à ') + 3));
-  }
-  return t.joinedOn(opening);
+  if (day(iso) === day(new Date().toISOString())) return t.joinedToday(formatTime(iso));
+  return t.joinedOn(formatOpening(iso));
 }

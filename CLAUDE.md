@@ -188,7 +188,7 @@ Un fichier par jour dans `docs_ia/journal/AAAA-MM-JJ.md`, limité à 800 lignes
 
 Journal de bord (document de projet, ajout seul) :
 `docs_business/Gatio Project/Gatio-Conception/05-journal-conception.md`.
-Prochain numéro : **78**. Toute décision, tout problème ou changement de
+Prochain numéro : **79**. Toute décision, tout problème ou changement de
 direction qui engage le projet y est ajouté, dans une section ajoutée en fin
 de fichier « Entrées de l'implémentation » : tableau (N°, date, sujet,
 contexte et problème, décision ou solution, suite, statut Ouvert / Décidé /
@@ -279,7 +279,7 @@ Commandes (vérifiées le 21/10/2026, tranche 0) :
 | Clé de signature des QR (à mettre dans `.env`) | `pnpm --filter @gatio/api keys:generate` |
 | Site en mode production local (essai du scan hors ligne) | `pnpm start:web` (exige un `.env` avec `API_URL`) + `pnpm dev:api` |
 | Tunnel HTTPS pour un téléphone (accord du responsable, le temps de l'essai) | `cloudflared tunnel --url http://127.0.0.1:3000` |
-| Page de scan / billets d'essai (prototype, tranche 1) | http://localhost:3000/scan · http://localhost:3000/dev/billets-essai |
+| Page de scan (contrôleur : lien d'invitation, ou « Scanner moi-même » dans l'onglet « Contrôleurs ») | http://localhost:3000/scan |
 | Documentation OpenAPI | http://localhost:4000/api/v1/openapi.json |
 | Emails de test | http://localhost:8025 |
 

@@ -639,3 +639,62 @@ export const scannerSessions = pgTable(
     index('scanner_sessions_invite_id_idx').on(table.inviteId),
   ],
 );
+
+// Scan complet (R24 à R27, tranche 10).
+export const scanResult = pgEnum('scan_result', [
+  'valid',
+  'already_used',
+  'wrong_gate',
+  'void',
+  'invalid',
+]);
+export const passageOutcome = pgEnum('passage_outcome', [
+  'accepted',
+  'duplicate',
+  'unknown_ticket',
+  'void_ticket',
+  'wrong_event',
+]);
+
+// Quelle liste, quand, par qui (cahier §5). Porte au moment du téléchargement : tranche 11.
+export const manifestDownloads = pgTable(
+  'manifest_downloads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    scannerSessionId: uuid('scanner_session_id')
+      .notNull()
+      .references(() => scannerSessions.id),
+    ticketCount: integer('ticket_count').notNull(),
+    cursorAt: timestamp('cursor_at', { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [index('manifest_downloads_session_idx').on(table.scannerSessionId)],
+);
+
+// Un enregistrement par scan reçu, refus compris. L'identifiant vient du téléphone : rejouer
+// un envoi ne crée pas de doublon.
+export const passages = pgTable(
+  'passages',
+  {
+    id: uuid('id').primaryKey(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    ticketId: uuid('ticket_id').references(() => tickets.id),
+    scannerSessionId: uuid('scanner_session_id')
+      .notNull()
+      .references(() => scannerSessions.id),
+    scannedAt: timestamp('scanned_at', { withTimezone: true }).notNull(),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+    localResult: scanResult('local_result').notNull(),
+    outcome: passageOutcome('outcome').notNull(),
+    verifyMs: integer('verify_ms').notNull(),
+  },
+  (table) => [
+    // R26 : un billet n'est « accepté » qu'une fois, même si deux téléphones envoient ensemble.
+    uniqueIndex('passages_accepted_ticket_idx')
+      .on(table.ticketId)
+      .where(sql`${table.outcome} = 'accepted'`),
+    index('passages_event_received_idx').on(table.eventId, table.receivedAt),
+  ],
+);

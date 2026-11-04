@@ -19,7 +19,7 @@ Une ligne par fonctionnalité du plan unifié. États : non commencée · partie
 | 10 | Scan complet et synchronisation | C2, O8 | construite, contrôle au PC-10 | `pnpm verify`, 9 tests d'intégration (deux téléphones sur le même billet, rejeu, passage forgé, billet annulé ou étranger, changements, session coupée, isolation), 7 tests de la file du téléphone, essai réel sur l'API de développement, captures, revue isolée | Grille manuelle sur vrais téléphones au PC-10 ; prototype de la tranche 1 retiré ; portes en tranche 11 |
 | 11 | Portes et affectation (facultatif) | O7, C2 | non commencée | | |
 | 12 | Tableau de bord et export | O6 | construite, contrôle au PC-12 | `pnpm verify`, 11 tests du CSV, 5 tests d'intégration (chiffres exacts, exclusions, catégorie retirée, export protégé et tracé, isolation), export réel par le relais du site, capture, revue isolée | Email non exporté (G2) ; données relues toutes les 15 s |
-| 13 | Reversements | O9 | non commencée | | |
+| 13 | Reversements | O9 | construite, contrôle au PC-13 | `pnpm verify`, 10 tests d'intégration (un versement exact, un seul transfert même en parallèle, après une panne, une coupure ou un envoi trop long ; issue inconnue jamais « échouée » ; refus puis numéro corrigé, tracé ; retenu ; vue O9 ; isolation), revue isolée | Faux versement seulement (vrai prestataire en tranche 16) ; envoi chaque minute |
 | 14 | Administration et double authentification | A1 à A6 | non commencée | | |
 | 15 | Support et rapprochement | A7, A4 | non commencée | | |
 | 16 | Intégrations réelles | — | non commencée | | Attend le choix des prestataires |

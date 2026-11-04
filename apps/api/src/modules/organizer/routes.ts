@@ -31,6 +31,7 @@ import { resolveFeeRule } from '../fees/rules.js';
 import { requireOrganizer } from '../identity/auth.js';
 import { loadProfile } from '../identity/profile.js';
 import { toEventImage } from '../media/images.js';
+import { requeuePayouts } from '../payouts/sender.js';
 import { syncInviteExpiry } from '../scanners/sessions.js';
 import type { StoragePort } from '../media/storage.js';
 
@@ -92,14 +93,22 @@ export const organizerRoutes =
         schema: { body: payoutAccountSchema, response: { 200: organizerProfileSchema, ...errors } },
       },
       async (request) => {
-        await db
-          .update(organizers)
-          .set({
-            payoutMethod: request.body.method,
-            payoutDestination: request.body.number,
-            updatedAt: sql`now()`,
-          })
-          .where(eq(organizers.id, me(request).organizerId));
+        await db.transaction(async (tx) => {
+          await tx
+            .update(organizers)
+            .set({
+              payoutMethod: request.body.method,
+              payoutDestination: request.body.number,
+              updatedAt: sql`now()`,
+            })
+            .where(eq(organizers.id, me(request).organizerId));
+          // Versements échoués (numéro faux) ou retenus faute de moyen : ils repartent ici.
+          await requeuePayouts(
+            tx,
+            { ...me(request), ip: request.ip },
+            { method: request.body.method, destination: request.body.number },
+          );
+        });
         return loadProfile(db, me(request).userId);
       },
     );

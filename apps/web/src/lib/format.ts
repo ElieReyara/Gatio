@@ -5,6 +5,12 @@ import { formatDateTime } from '@gatio/shared';
 export { formatDateTime, formatMoney, formatNumber, formatPercent } from '@gatio/shared';
 const CHAD_OFFSET = '+01:00';
 
+// « 2 novembre » (maquette O9 : « Envoyé le 2 novembre »).
+export function formatDayMonth(iso: string): string {
+  const text = formatDateTime(iso);
+  return text.slice(text.indexOf(' ') + 1, text.lastIndexOf(', '));
+}
+
 // « 21 h 14 » (maquettes O7 et O8 : heure seule).
 export function formatTime(iso: string): string {
   const text = formatDateTime(iso);

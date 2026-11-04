@@ -1,0 +1,1 @@
+ALTER TABLE "payouts" ADD COLUMN "send_generation" integer DEFAULT 0 NOT NULL;

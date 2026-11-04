@@ -484,11 +484,19 @@ export const payouts = pgTable(
     attempts: integer('attempts').notNull().default(0),
     lastError: text('last_error'),
     sentAt: timestamp('sent_at', { withTimezone: true }),
+    // Prochain essai d'envoi : reprises espacées, et réservation pendant un envoi en cours.
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+    // Génération d'envoi : la clé d'idempotence est « versement : génération » ; une relance
+    // vers un nouveau numéro après un refus en ouvre une nouvelle.
+    sendGeneration: integer('send_generation').notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
     index('payouts_organizer_status_idx').on(table.organizerId, table.status),
+    index('payouts_pending_idx')
+      .on(table.nextAttemptAt)
+      .where(sql`${table.status} = 'pending'`),
     check('payouts_amount_positive', sql`${table.amount} > 0`),
   ],
 );

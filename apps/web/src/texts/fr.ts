@@ -356,6 +356,19 @@ export const texts = {
     payouts: {
       title: 'Reversements',
       empty: 'Aucun reversement pour l’instant. Ils apparaissent après vos premières ventes.',
+      // Maquette O9 ; un versement part à chaque vente (R21) : pas de « date prévue ».
+      next: 'Prochain reversement',
+      to: (method: string, number: string) => `Vers ${method} · ${number}`,
+      status: { pending: 'En attente', sent: 'Envoyé', failed: 'Échoué', held: 'Retenu' },
+      detail: {
+        sent: (date: string) => `Envoyé le ${date}`,
+        failed: (date: string) => `Échec le ${date}`,
+        held: 'Mise en attente par Gatio',
+      },
+      failedStrong: 'Un reversement a échoué.',
+      failedText: 'Vérifiez votre numéro de versement dans votre profil.',
+      editAccount: 'Modifier mon moyen de versement',
+      loading: 'Chargement des reversements',
     },
     // Maquette O5 et proposition « O5 report » (docs_ia/maquettes-proposees).
     publication: {

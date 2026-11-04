@@ -1301,6 +1301,10 @@ button.shell-back {
   border-radius: var(--radius-md);
 }
 
+.skeleton--row {
+  height: 48px;
+}
+
 .skeleton--small {
   height: 80px;
   border-radius: var(--radius-md);
@@ -1342,6 +1346,11 @@ button.shell-back {
   color: var(--success);
 }
 
+.badge--neutral {
+  background: var(--sand);
+  color: var(--ink);
+}
+
 .entry-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1380,6 +1389,21 @@ button.shell-back {
   font-size: 24px;
   line-height: 30px;
   font-weight: 700;
+}
+
+/* Reversements (maquette O9) : lignes séparées par un filet. */
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cell small {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
 }
 
 /* Mise en page commune et ordinateur (demande du responsable, 27/10/2026, sans maquette).

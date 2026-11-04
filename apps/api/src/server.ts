@@ -8,6 +8,8 @@ import { jobEmailOutbox, startEmailWorker } from './modules/email/outbox.js';
 import { mailpitEmail } from './modules/email/port.js';
 import { diskStorage } from './modules/media/storage.js';
 import { fakePaymentProvider } from './modules/payments/fake-provider.js';
+import { fakePayoutProvider } from './modules/payouts/port.js';
+import { startPayoutJobs } from './modules/payouts/sender.js';
 import { smsPortFor } from './modules/sms/port.js';
 import { jobNotificationQueue, startPaymentJobs } from './modules/payments/jobs.js';
 import { startTicketEmailJobs } from './modules/tickets/email.js';
@@ -60,6 +62,8 @@ const sendTicketEmails = await startTicketEmailJobs(jobs, db, {
   log: app.log,
 });
 await startPaymentJobs(jobs, db, payments, app.log, sendTicketEmails);
+// Faux versement : rien ne part (la production est refusée plus haut, tranche 16).
+await startPayoutJobs(jobs, db, fakePayoutProvider(), app.log);
 await app.listen({ port: config.port, host: config.host });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

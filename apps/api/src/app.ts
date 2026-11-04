@@ -28,6 +28,7 @@ import { fakePaymentDevRoutes } from './modules/payments/dev-routes.js';
 import type { FakePaymentProvider } from './modules/payments/fake-provider.js';
 import type { PaymentPort } from './modules/payments/port.js';
 import { paymentRoutes, paymentWebhookRoutes } from './modules/payments/routes.js';
+import { payoutRoutes } from './modules/payouts/routes.js';
 import { publicRoutes } from './modules/public/routes.js';
 import { scannerOrganizerRoutes, scanRoutes } from './modules/scanners/routes.js';
 import type { SmsPort } from './modules/sms/port.js';
@@ -141,6 +142,7 @@ export async function buildApp({
       await api.register(
         organizerStatsRoutes({ db, secureCookies: config.nodeEnv === 'production' }),
       );
+      await api.register(payoutRoutes({ db, secureCookies: config.nodeEnv === 'production' }));
       await api.register(mediaRoutes(storage));
       await api.register(publicRoutes(db, { phoneVerification: config.buyers.phoneVerification }));
       await api.register(

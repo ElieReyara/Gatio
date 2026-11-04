@@ -18,7 +18,7 @@ Une ligne par fonctionnalité du plan unifié. États : non commencée · partie
 | 9 | Contrôleurs invités | C1, O7 | construite, contrôle au PC-10 | `pnpm verify`, 17 tests d'intégration (dont le critère : lien désactivé ou expiré refusé, sessions coupées), parcours complet à l'écran (lien, rejoindre, liste, désactivation, page de scan coupée), revue isolée | Le scan réel reste celui du prototype jusqu'à la tranche 10 ; portes en tranche 11 ; jeton du lien gardé par le navigateur de l'organisateur |
 | 10 | Scan complet et synchronisation | C2, O8 | construite, contrôle au PC-10 | `pnpm verify`, 9 tests d'intégration (deux téléphones sur le même billet, rejeu, passage forgé, billet annulé ou étranger, changements, session coupée, isolation), 7 tests de la file du téléphone, essai réel sur l'API de développement, captures, revue isolée | Grille manuelle sur vrais téléphones au PC-10 ; prototype de la tranche 1 retiré ; portes en tranche 11 |
 | 11 | Portes et affectation (facultatif) | O7, C2 | non commencée | | |
-| 12 | Tableau de bord et export | O6 | non commencée | | |
+| 12 | Tableau de bord et export | O6 | construite, contrôle au PC-12 | `pnpm verify`, 11 tests du CSV, 5 tests d'intégration (chiffres exacts, exclusions, catégorie retirée, export protégé et tracé, isolation), export réel par le relais du site, capture, revue isolée | Email non exporté (G2) ; données relues toutes les 15 s |
 | 13 | Reversements | O9 | non commencée | | |
 | 14 | Administration et double authentification | A1 à A6 | non commencée | | |
 | 15 | Support et rapprochement | A7, A4 | non commencée | | |

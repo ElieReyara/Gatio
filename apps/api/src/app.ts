@@ -21,6 +21,7 @@ import { identityRoutes } from './modules/identity/routes.js';
 import { mediaRoutes } from './modules/media/routes.js';
 import type { StoragePort } from './modules/media/storage.js';
 import { organizerRoutes } from './modules/organizer/routes.js';
+import { organizerStatsRoutes } from './modules/organizer/stats.js';
 import { orderRoutes } from './modules/orders/routes.js';
 import { processNotification } from './modules/payments/confirmation.js';
 import { fakePaymentDevRoutes } from './modules/payments/dev-routes.js';
@@ -136,6 +137,9 @@ export async function buildApp({
       );
       await api.register(
         organizerRoutes({ db, storage, secureCookies: config.nodeEnv === 'production' }),
+      );
+      await api.register(
+        organizerStatsRoutes({ db, secureCookies: config.nodeEnv === 'production' }),
       );
       await api.register(mediaRoutes(storage));
       await api.register(publicRoutes(db, { phoneVerification: config.buyers.phoneVerification }));

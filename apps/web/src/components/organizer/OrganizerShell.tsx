@@ -77,12 +77,14 @@ export function EventTabs({
   active,
 }: {
   eventId: string;
-  active: 'info' | 'tickets' | 'scanners';
+  active: 'info' | 'tickets' | 'scanners' | 'sales';
 }) {
+  // Ordre de la maquette O6/O7 : Infos, Billets, Contrôleurs, Ventes.
   const tabs = [
     { key: 'info' as const, href: `/organisateur/evenements/${eventId}/infos` },
     { key: 'tickets' as const, href: `/organisateur/evenements/${eventId}/billets` },
     { key: 'scanners' as const, href: `/organisateur/evenements/${eventId}/controleurs` },
+    { key: 'sales' as const, href: `/organisateur/evenements/${eventId}/ventes` },
   ];
   return (
     <nav className="tabs">

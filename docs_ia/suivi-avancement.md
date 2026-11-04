@@ -24,7 +24,7 @@ prérequis du lancement ; tranche 11 : Basse (facultative).
 | 9 | Contrôleurs invités | Haute | 3 | Lien révoqué ou expiré refusé, sessions coupées | (PC-10) | en attente de contrôle (construite le 03/11/2026, contrôle au PC-10) |
 | 10 | Scan complet et synchronisation | Haute | 6, 9, 1 | Grille manuelle iPhone + Android réussie | PC-10 | en attente de contrôle (construite le 03/11/2026) |
 | 11 | Portes et affectation (facultatif) | Basse | 10 | Sans affectation, rien ne change | PC-11 | à faire |
-| 12 | Tableau de bord et export | Moyenne | 6 | Chiffres exacts ; CSV protégé ; isolation testée | PC-12 | à faire |
+| 12 | Tableau de bord et export | Moyenne | 6 | Chiffres exacts ; CSV protégé ; isolation testée | PC-12 | en attente de contrôle (construite le 04/11/2026) |
 | 13 | Reversements | Moyenne | 6 | 1 versement exact par commande ; relance sans double envoi | PC-13 | à faire |
 | 14 | Administration et double authentification | Moyenne | 6, 13 | Suspension < 1 min ; actions tracées ; aucun accès admin sans code | PC-14 | à faire |
 | 15 | Support et rapprochement | Basse | 14 | Écart fabriqué détecté et résolu ; droits support limités | PC-15 | à faire |

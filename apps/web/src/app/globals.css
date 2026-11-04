@@ -519,10 +519,13 @@ body {
   display: flex;
   padding: 0 var(--space-4);
   border-bottom: 2px solid var(--line);
+  /* Quatre onglets (O6, O7) : défilement plutôt que débordement sur un petit écran. */
+  overflow-x: auto;
 }
 
 .tabs a {
-  padding: var(--space-3);
+  flex: none;
+  padding: var(--space-3) var(--space-2);
   color: var(--muted);
   font-weight: 700;
   text-decoration: none;
@@ -1350,6 +1353,33 @@ button.shell-back {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+/* Ventes (maquette O6). */
+.bar {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--sand);
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 12px;
+  background: var(--brand);
+}
+
+.line-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.amount {
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
 }
 
 /* Mise en page commune et ordinateur (demande du responsable, 27/10/2026, sans maquette).

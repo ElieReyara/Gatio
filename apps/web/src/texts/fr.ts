@@ -116,7 +116,25 @@ export const texts = {
   // (journal de bord n° 64), à valider au point de contrôle PC-3.
   space: {
     nav: { events: 'Événements', payouts: 'Reversements', profile: 'Profil' },
-    tabs: { info: 'Infos', tickets: 'Billets', scanners: 'Contrôleurs' },
+    tabs: { info: 'Infos', tickets: 'Billets', scanners: 'Contrôleurs', sales: 'Ventes' },
+    // Onglet « Ventes » (maquette O6, tranche 12).
+    sales: {
+      sold: 'Billets vendus',
+      // Nombres déjà mis en forme par l'écran (« 1 200 ») : ce fichier n'importe rien.
+      of: (total: string) => `sur ${total}`,
+      paid: 'Montant payé par les acheteurs',
+      payout: 'Vous recevez',
+      byCategory: 'Par catégorie',
+      categoryLine: (sold: number, soldText: string, remaining: number, remainingText: string) =>
+        `${soldText} vendu${sold > 1 ? 's' : ''} · ${remainingText} restant${remaining > 1 ? 's' : ''}`,
+      loading: 'Chargement des ventes',
+      archived: 'Catégorie retirée de la vente',
+      export: 'Exporter la liste des acheteurs',
+      emptyTitle: 'Aucun billet vendu pour l’instant',
+      emptyText: 'Partagez votre lien de vente pour recevoir vos premières réservations.',
+      copyLink: 'Copier le lien de vente',
+      copied: 'Lien copié',
+    },
     // Rapport d'entrée (maquette O8, tranche 10).
     entryReport: {
       title: 'Rapport d’entrée',

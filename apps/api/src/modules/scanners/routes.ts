@@ -34,6 +34,7 @@ import {
   requireScanner,
   scanEvent,
   setScanCookie,
+  UPLOAD_GRACE_HOURS,
   validSession,
 } from './sessions.js';
 
@@ -348,7 +349,7 @@ export const scanRoutes =
         },
       },
       async (request) => {
-        const session = await requireScanner(db, request);
+        const session = await requireScanner(db, request, UPLOAD_GRACE_HOURS);
         return { results: await recordPassages(db, signer, session, request.body.passages) };
       },
     );

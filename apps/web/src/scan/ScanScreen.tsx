@@ -65,6 +65,9 @@ export function ScanScreen() {
   const raw = useRef<ScanManifest | null>(null);
   const syncing = useRef(false);
   const ended = useRef(false);
+  // Session terminée : les passages en attente partent encore pendant le délai de grâce (F11),
+  // jusqu'à ce que le serveur les refuse.
+  const uploadClosed = useRef(false);
   // Passages que le stockage n'a pas pu garder : envoyés depuis la mémoire, sans être perdus.
   const unsaved = useRef<LocalPassage[]>([]);
   const firstPassages = useRef(new Map<string, string>());
@@ -168,7 +171,7 @@ export function ScanScreen() {
   // Envoi des passages en attente puis changements depuis le curseur (R26, R27).
   useEffect(() => {
     const sync = async () => {
-      if (!navigator.onLine || syncing.current || ended.current || !raw.current) return;
+      if (!navigator.onLine || syncing.current || uploadClosed.current || !raw.current) return;
       syncing.current = true;
       try {
         const current = raw.current;
@@ -180,7 +183,8 @@ export function ScanScreen() {
         let listChanged = false;
         if (batch.length > 0) {
           const results = await sendPassages(batch);
-          if (results) {
+          if (results === 'closed') uploadClosed.current = true;
+          else if (results) {
             // La liste locale garde les billets passés avant que leurs passages quittent la file.
             listChanged = applyResults(prepared, batch, results);
             const saved =
@@ -200,6 +204,8 @@ export function ScanScreen() {
             }
           }
         }
+        // Session terminée : plus de changements à suivre, seulement la file à vider.
+        if (ended.current) return;
         const changed = await scanRequest(
           `/scan/changes?since=${encodeURIComponent(current.cursor)}`,
         );

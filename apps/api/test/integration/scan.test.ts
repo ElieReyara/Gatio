@@ -367,6 +367,29 @@ describe('scan complet et synchronisation (R24 à R27, C2, O8)', () => {
     expect(await status(other!)).toBe('valid');
   });
 
+  it('fin de session : les passages hors réseau partent encore 24 h, rien d’autre (F11)', async () => {
+    const event = await publishedEvent();
+    const [early, late] = await paidTickets(event, 2);
+    const { cookie } = await scannerCookie(event.id);
+    const offline = await passage(early!);
+    // La soirée est finie depuis une heure : la session est terminée…
+    await pool.query(
+      "update scanner_invites set expires_at = now() - interval '1 hour' where event_id = $1",
+      [event.id],
+    );
+    expect((await call({ url: '/api/v1/scan/session', cookie })).statusCode).toBe(401);
+    expect((await call({ url: '/api/v1/scan/manifest', cookie })).statusCode).toBe(401);
+    // … mais les passages faits hors réseau remontent encore.
+    expect(await outcomes(cookie, [offline])).toEqual(['accepted']);
+    // Au-delà du délai de grâce : refusés.
+    await pool.query(
+      "update scanner_invites set expires_at = now() - interval '25 hours' where event_id = $1",
+      [event.id],
+    );
+    expect((await send(cookie, [await passage(late!)])).statusCode).toBe(401);
+    expect(await status(late!)).toBe('valid');
+  });
+
   it('lot trop grand ou passage mal formé : refusé sans rien enregistrer', async () => {
     const event = await publishedEvent();
     const { cookie } = await scannerCookie(event.id);

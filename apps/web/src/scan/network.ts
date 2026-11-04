@@ -31,9 +31,11 @@ export async function scanRequest(path: string, body?: unknown): Promise<ScanRes
   }
 }
 
-// Envoi d'un lot ; réponse du serveur, ou null (réseau, session coupée).
+// Envoi d'un lot : réponse du serveur ; 'closed' si la session n'accepte plus de passages
+// (retirée, ou plus de 24 h après sa fin) ; null si le réseau n'a pas répondu.
 export async function sendPassages(batch: LocalPassage[]) {
   const response = await scanRequest('/scan/passages', { passages: batch.map(toWire) });
+  if (!response.ok && response.status === 401) return 'closed' as const;
   const parsed = response.ok ? scanPassagesResponseSchema.safeParse(response.data) : null;
   return parsed?.success ? parsed.data.results : null;
 }
@@ -50,7 +52,7 @@ export async function flushPendingPassages(): Promise<void> {
     if (invalid.length > 0) await removePassages(invalid).catch(() => undefined);
     if (batch.length === 0) return;
     const results = await sendPassages(batch);
-    if (!results) return;
+    if (!results || results === 'closed') return;
     await removePassages(results.map((result) => result.id)).catch(() => undefined);
   }
 }

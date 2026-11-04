@@ -101,14 +101,22 @@ export async function openScannerSession(
 
 // Session valable : ni retirée, ni ouverte par un lien désactivé, ni expirée. Désactiver un
 // lien coupe donc aussi les sessions ouvertes par lui (R29), même celles créées pendant.
-export const validSession = and(
-  isNull(scannerSessions.revokedAt),
-  isNull(scannerInvites.revokedAt),
-  ne(events.status, CLOSED_STATUS),
-  sql`${sessionExpiry} > now()`,
-);
+export const validSession = sessionValidity(0);
 
-export async function findScannerSession(db: Db, token: string) {
+// F11 du PC-10 : les passages faits hors réseau peuvent encore partir 24 h après la fin de la
+// session (soirée qui finit tard, téléphone resté hors ligne). Rien d'autre n'est permis.
+export const UPLOAD_GRACE_HOURS = 24;
+
+function sessionValidity(graceHours: number) {
+  return and(
+    isNull(scannerSessions.revokedAt),
+    isNull(scannerInvites.revokedAt),
+    ne(events.status, CLOSED_STATUS),
+    sql`${sessionExpiry} + make_interval(hours => ${graceHours}) > now()`,
+  );
+}
+
+export async function findScannerSession(db: Db, token: string, graceHours = 0) {
   const [row] = await db
     .select({
       id: scannerSessions.id,
@@ -126,7 +134,7 @@ export async function findScannerSession(db: Db, token: string) {
     .from(scannerSessions)
     .innerJoin(events, eq(events.id, scannerSessions.eventId))
     .leftJoin(scannerInvites, eq(scannerInvites.id, scannerSessions.inviteId))
-    .where(and(eq(scannerSessions.tokenHash, hashToken(token)), validSession));
+    .where(and(eq(scannerSessions.tokenHash, hashToken(token)), sessionValidity(graceHours)));
   if (!row) return null;
   // Dernière activité (liste des contrôleurs) notée au plus une fois par minute.
   if (Date.now() - row.lastSeenAt.getTime() > 60_000) {
@@ -138,9 +146,9 @@ export async function findScannerSession(db: Db, token: string) {
   return row;
 }
 
-export async function requireScanner(db: Db, request: FastifyRequest) {
+export async function requireScanner(db: Db, request: FastifyRequest, graceHours = 0) {
   const token = readScanToken(request);
-  const session = token ? await findScannerSession(db, token) : null;
+  const session = token ? await findScannerSession(db, token, graceHours) : null;
   if (!token || !session) {
     throw new AppError(
       401,
